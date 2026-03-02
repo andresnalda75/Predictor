@@ -16,6 +16,12 @@ with open(os.path.join(BASE, "models/xgb_champion.pkl"), "rb") as f:
 with open(os.path.join(BASE, "models/cols_champion.pkl"), "rb") as f:
     CHAMPION_COLS = pickle.load(f)
 
+with open(os.path.join(BASE, "models/xgb_halftime.pkl"), "rb") as f:
+    xgb_halftime = pickle.load(f)
+
+with open(os.path.join(BASE, "models/cols_halftime.pkl"), "rb") as f:
+    HT_COLS = pickle.load(f)
+
 with open(os.path.join(BASE, "models/label_encoder.pkl"), "rb") as f:
     le = pickle.load(f)
 
@@ -219,7 +225,48 @@ def api_predict():
 
 @app.route("/api/predict_halftime")
 def api_predict_halftime():
-    return jsonify({"error": "Half-time predictions use separate model — coming soon"})
+    home = request.args.get("home")
+    away = request.args.get("away")
+    ht_home = int(request.args.get("ht_home", 0))
+    ht_away = int(request.args.get("ht_away", 0))
+
+    if not home or not away: return jsonify({"error":"Select both teams"})
+    if home == away: return jsonify({"error":"Teams must be different"})
+
+    h_pts,h_gf,h_ga,h_wins,h_draws = get_form(home)
+    a_pts,a_gf,a_ga,a_wins,a_draws = get_form(away)
+    hh_pts,hh_gf,hh_ga,_,_         = get_form(home, home_only=True)
+    aa_pts,aa_gf,aa_ga,_,_          = get_form(away, away_only=True)
+    h_pos,h_lpts,h_lgd              = get_standing(home)
+    a_pos,a_lpts,a_lgd              = get_standing(away)
+    elo_home = hist_df[hist_df["home_team"]==home]["elo_home"].iloc[-1] if len(hist_df[hist_df["home_team"]==home]) else 1500
+    elo_away = hist_df[hist_df["away_team"]==away]["elo_away"].iloc[-1] if len(hist_df[hist_df["away_team"]==away]) else 1500
+
+    ht_gd = ht_home - ht_away
+
+    feat_dict = {
+        "home_form_pts":h_pts,"home_form_gd":h_gf-h_ga,
+        "away_form_pts":a_pts,"away_form_gd":a_gf-a_ga,
+        "home_home_pts":hh_pts,"away_away_pts":aa_pts,
+        "pts_diff":h_pts-a_pts,"gd_diff":(h_gf-h_ga)-(a_gf-a_ga),
+        "position_diff":a_pos-h_pos,"league_pts_diff":h_lpts-a_lpts,
+        "elo_home":elo_home,"elo_away":elo_away,"elo_diff":elo_home-elo_away,
+        "ht_home":ht_home,"ht_away":ht_away,"ht_gd":ht_gd,
+        "ht_result_H":1 if ht_gd>0 else 0,
+        "ht_result_D":1 if ht_gd==0 else 0,
+        "ht_result_A":1 if ht_gd<0 else 0
+    }
+    feats = pd.DataFrame([feat_dict])[HT_COLS]
+    proba = xgb_halftime.predict_proba(feats)[0]
+    labels = le.classes_
+    pred = labels[np.argmax(proba)]
+
+    return jsonify({
+        "home":home,"away":away,"prediction":pred,
+        "ht_score": f"{ht_home} - {ht_away}",
+        "probabilities":{l:round(float(p)*100,1) for l,p in zip(labels,proba)},
+        "home_position":h_pos,"away_position":a_pos
+    })
 
 @app.route("/api/validation")
 def api_validation():
