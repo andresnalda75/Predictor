@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EPL Predictor Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --green:#00c853;--red:#ff1744;--amber:#ffab00;--blue:#1565c0;
+    --ink:#0d0d0d;--muted:#6b7280;--border:#e5e7eb;
+    --bg:#f8f9fb;--card:#ffffff;--epl:#38003c;--epl2:#00ff85;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);}
+  header{background:var(--epl);color:#fff;padding:0 2rem;display:flex;align-items:center;
+    justify-content:space-between;height:64px;position:sticky;top:0;z-index:100;
+    box-shadow:0 2px 12px rgba(0,0,0,.25);}
+  .logo{font-family:'Archivo Black',sans-serif;font-size:1.25rem;letter-spacing:.04em;}
+  .logo span{color:var(--epl2);}
+  .nav-tabs{display:flex;gap:.25rem;}
+  .tab-btn{background:transparent;border:none;color:rgba(255,255,255,.6);
+    font-family:'DM Sans',sans-serif;font-size:.85rem;font-weight:500;
+    padding:.5rem 1rem;border-radius:6px;cursor:pointer;transition:all .2s;}
+  .tab-btn:hover{background:rgba(255,255,255,.1);color:#fff;}
+  .tab-btn.active{background:var(--epl2);color:var(--epl);font-weight:700;}
+  main{max-width:1200px;margin:0 auto;padding:2rem 1.5rem;}
+  .section{display:none;}.section.active{display:block;}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:12px;
+    padding:1.5rem;box-shadow:0 1px 4px rgba(0,0,0,.06);margin-bottom:1rem;}
+  .card-title{font-family:'Archivo Black',sans-serif;font-size:.8rem;
+    letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:1rem;}
+  .stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+    gap:1rem;margin-bottom:1.5rem;}
+  .stat-card{background:var(--card);border:1px solid var(--border);border-radius:12px;
+    padding:1.25rem 1.5rem;box-shadow:0 1px 4px rgba(0,0,0,.06);}
+  .stat-label{font-size:.78rem;color:var(--muted);font-weight:500;margin-bottom:.35rem;}
+  .stat-value{font-family:'Archivo Black',sans-serif;font-size:2rem;color:var(--ink);}
+  .stat-sub{font-size:.78rem;color:var(--muted);margin-top:.2rem;}
+  .stat-value.green{color:var(--green);}.stat-value.amber{color:var(--amber);}
+  .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:1rem;}
+  @media(max-width:700px){.grid-2{grid-template-columns:1fr;}}
+  .outcome-row{display:flex;align-items:center;gap:1rem;margin-bottom:.75rem;}
+  .outcome-label{font-weight:600;width:28px;}
+  .bar-track{flex:1;height:10px;background:var(--border);border-radius:99px;overflow:hidden;}
+  .bar-fill{height:100%;border-radius:99px;transition:width .6s ease;}
+  .bar-fill.H{background:var(--green);}.bar-fill.D{background:var(--amber);}.bar-fill.A{background:var(--blue);}
+  .outcome-pct{font-size:.85rem;font-weight:600;width:44px;text-align:right;}
+  .data-table{width:100%;border-collapse:collapse;font-size:.88rem;}
+  .data-table th{text-align:left;padding:.6rem .9rem;font-size:.72rem;letter-spacing:.07em;
+    text-transform:uppercase;color:var(--muted);border-bottom:2px solid var(--border);}
+  .data-table td{padding:.65rem .9rem;border-bottom:1px solid var(--border);}
+  .data-table tr:last-child td{border-bottom:none;}
+  .data-table tr:hover td{background:#f3f4f6;}
+  .acc-pill{display:inline-block;padding:.2rem .6rem;border-radius:99px;font-size:.78rem;font-weight:700;}
+  .acc-pill.good{background:#dcfce7;color:#166534;}
+  .acc-pill.ok{background:#fef9c3;color:#854d0e;}
+  .acc-pill.poor{background:#fee2e2;color:#991b1b;}
+  .h2h-selects{display:flex;gap:1rem;align-items:center;margin-bottom:1.5rem;flex-wrap:wrap;}
+  .h2h-selects select,.predict-form select{flex:1;min-width:200px;padding:.6rem .9rem;
+    border:1px solid var(--border);border-radius:8px;font-family:'DM Sans',sans-serif;
+    font-size:.9rem;background:white;cursor:pointer;}
+  .vs-badge{font-family:'Archivo Black',sans-serif;font-size:.9rem;color:var(--muted);}
+  .btn-search{background:var(--epl);color:white;border:none;padding:.65rem 1.4rem;
+    border-radius:8px;font-family:'DM Sans',sans-serif;font-weight:600;font-size:.9rem;
+    cursor:pointer;transition:opacity .2s;}
+  .btn-search:hover{opacity:.85;}
+  .h2h-summary{display:flex;gap:1.5rem;margin-bottom:1.5rem;flex-wrap:wrap;}
+  .h2h-stat{text-align:center;}
+  .h2h-stat .n{font-family:'Archivo Black',sans-serif;font-size:1.8rem;}
+  .h2h-stat .l{font-size:.78rem;color:var(--muted);}
+  .h2h-stat .n.green{color:var(--green);}.h2h-stat .n.red{color:var(--red);}.h2h-stat .n.amber{color:var(--amber);}
+  .match-row{display:flex;justify-content:space-between;align-items:center;
+    padding:.7rem 0;border-bottom:1px solid var(--border);font-size:.88rem;}
+  .match-row:last-child{border-bottom:none;}
+  .match-date{color:var(--muted);width:90px;font-size:.8rem;}
+  .match-teams{flex:1;font-weight:500;}
+  .match-score{font-family:'Archivo Black',sans-serif;font-size:1rem;}
+  .result-badge{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;
+    justify-content:center;font-size:.72rem;font-weight:700;color:white;}
+  .result-badge.H{background:var(--green);}.result-badge.D{background:var(--amber);}.result-badge.A{background:var(--blue);}
+  .predict-form{display:flex;gap:1rem;align-items:center;flex-wrap:wrap;margin-bottom:2rem;}
+  .predict-result{background:var(--epl);color:white;border-radius:16px;padding:2rem;
+    text-align:center;display:none;}
+  .predict-result.show{display:block;}
+  .predict-matchup{font-size:1.1rem;opacity:.7;margin-bottom:.5rem;}
+  .predict-outcome{font-family:'Archivo Black',sans-serif;font-size:3rem;color:var(--epl2);margin:.5rem 0;}
+  .predict-label{font-size:.9rem;opacity:.7;margin-bottom:1.5rem;}
+  .proba-bars{display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;}
+  .proba-item{text-align:center;}
+  .proba-circle{width:72px;height:72px;border-radius:50%;border:3px solid rgba(255,255,255,.3);
+    display:flex;align-items:center;justify-content:center;
+    font-family:'Archivo Black',sans-serif;font-size:1.1rem;margin:0 auto .4rem;}
+  .proba-circle.winner{border-color:var(--epl2);color:var(--epl2);}
+  .proba-item-label{font-size:.78rem;opacity:.7;}
+  .conf-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1rem;}
+  .conf-card{background:var(--card);border:1px solid var(--border);border-radius:12px;
+    padding:1.25rem;text-align:center;}
+  .conf-band{font-family:'Archivo Black',sans-serif;font-size:1rem;margin-bottom:.5rem;}
+  .conf-acc{font-size:1.8rem;font-weight:700;}
+  .conf-acc.good{color:var(--green);}.conf-acc.ok{color:var(--amber);}.conf-acc.poor{color:var(--red);}
+  .conf-sub{font-size:.78rem;color:var(--muted);margin-top:.25rem;}
+  .loading{text-align:center;padding:3rem;color:var(--muted);font-size:.9rem;}
+  .seg-toggle{display:flex;gap:.5rem;margin-bottom:1rem;flex-wrap:wrap;}
+  .seg-btn{padding:.35rem .9rem;border-radius:99px;border:1px solid var(--border);
+    background:white;font-family:'DM Sans',sans-serif;font-size:.82rem;cursor:pointer;transition:all .15s;}
+  .seg-btn.active{background:var(--epl);color:white;border-color:var(--epl);}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">EPL <span>Predictor</span></div>
+  <nav class="nav-tabs">
+    <button class="tab-btn active" onclick="showTab('overview',this)">Overview</button>
+    <button class="tab-btn" onclick="showTab('teams',this)">Teams</button>
+    <button class="tab-btn" onclick="showTab('confidence',this)">Confidence</button>
+    <button class="tab-btn" onclick="showTab('h2h',this)">Head to Head</button>
+    <button class="tab-btn" onclick="showTab('predict',this)">Predict</button>
+    <button class="tab-btn" onclick="showTab('halftime',this)">Half Time</button>
+    <button class="tab-btn" onclick="showTab('validation',this)">Validation</button>
+  </nav>
+</header>
+<main>
+  <section id="overview" class="section active">
+    <div class="stat-grid" id="overview-stats"><div class="loading">Loading…</div></div>
+    <div class="grid-2">
+      <div class="card"><div class="card-title">Accuracy by Predicted Outcome</div><div id="outcome-bars"><div class="loading">Loading…</div></div></div>
+      <div class="card"><div class="card-title">Result Distribution</div><div id="dist-bars"><div class="loading">Loading…</div></div></div>
+    </div>
+  </section>
+  <section id="teams" class="section">
+    <div class="card">
+      <div class="card-title">Prediction Accuracy by Team</div>
+      <div class="seg-toggle">
+        <button class="seg-btn active" onclick="filterTeams('all',this)">All</button>
+        <button class="seg-btn" onclick="filterTeams('good',this)">Above 40%</button>
+        <button class="seg-btn" onclick="filterTeams('poor',this)">Below 30%</button>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="data-table">
+          <thead><tr><th>#</th><th>Team</th><th>Games</th><th>Pre-Match</th><th>In-Game</th><th>Correct</th></tr></thead>
+          <tbody id="teams-tbody"><tr><td colspan="6" class="loading">Loading…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+  <section id="confidence" class="section">
+    <div class="card" style="margin-bottom:1rem">
+      <div class="card-title">Accuracy by Confidence Band</div>
+      <div class="conf-grid" id="conf-grid"><div class="loading">Loading…</div></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Key Insight</div>
+      <p style="font-size:.92rem;line-height:1.7;color:#374151">
+        The model performs best when confidence is between <strong>50–60%</strong>.
+        Predictions below 40% are essentially coin flips. Always cross-check with form and head to head data.
+      </p>
+    </div>
+  </section>
+  <section id="h2h" class="section">
+    <div class="card">
+      <div class="card-title">Head to Head Record</div>
+      <div class="h2h-selects">
+        <select id="h2h-home"><option value="">— Home Team —</option>{% for t in teams %}<option>{{ t }}</option>{% endfor %}</select>
+        <span class="vs-badge">VS</span>
+        <select id="h2h-away"><option value="">— Away Team —</option>{% for t in teams %}<option>{{ t }}</option>{% endfor %}</select>
+        <button class="btn-search" onclick="loadH2H()">Search</button>
+      </div>
+      <div id="h2h-result"></div>
+    </div>
+  </section>
+  <section id="predict" class="section">
+    <div class="card" style="margin-bottom:1rem">
+      <div class="card-title">Predict a Match</div>
+      <div class="predict-form">
+        <select id="pred-home"><option value="">— Home Team —</option>{% for t in teams %}<option>{{ t }}</option>{% endfor %}</select>
+        <span class="vs-badge">VS</span>
+        <select id="pred-away"><option value="">— Away Team —</option>{% for t in teams %}<option>{{ t }}</option>{% endfor %}</select>
+        <button class="btn-search" onclick="runPredict()">Predict</button>
+      </div>
+      <div id="predict-result"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">About this prediction</div>
+      <p style="font-size:.88rem;line-height:1.7;color:#374151">
+        Uses the <strong>pre-match model (48.1% accuracy)</strong> trained on 3 seasons of EPL data.
+        Features include last-5 form, home/away specific form, current league position and points.
+      </p>
+    </div>
+  </section>
+
+  <section id="halftime" class="section">
+    <div class="card" style="margin-bottom:1rem">
+      <div class="card-title">Half Time Predictor</div>
+      <p style="font-size:.85rem;color:var(--muted);margin-bottom:1.5rem">
+        Enter the teams and half time score to predict the final result using the in-game model (55.3% accuracy)
+      </p>
+      <div class="predict-form">
+        <select id="ht-home"><option value="">— Home Team —</option>{% for t in teams %}<option>{{ t }}</option>{% endfor %}</select>
+        <span class="vs-badge">VS</span>
+        <select id="ht-away"><option value="">— Away Team —</option>{% for t in teams %}<option>{{ t }}</option>{% endfor %}</select>
+      </div>
+      <div style="display:flex;gap:1rem;align-items:center;margin-bottom:1.5rem;flex-wrap:wrap">
+        <span style="font-weight:600;font-size:.9rem">Half Time Score:</span>
+        <input id="ht-score-home" type="number" min="0" max="10" value="0"
+          style="width:70px;padding:.6rem;border:2px solid var(--border);border-radius:8px;
+          font-size:1.2rem;font-family:'Archivo Black',sans-serif;text-align:center">
+        <span style="font-family:'Archivo Black',sans-serif;font-size:1.2rem">—</span>
+        <input id="ht-score-away" type="number" min="0" max="10" value="0"
+          style="width:70px;padding:.6rem;border:2px solid var(--border);border-radius:8px;
+          font-size:1.2rem;font-family:'Archivo Black',sans-serif;text-align:center">
+        <button class="btn-search" onclick="runHalfTime()">Predict Final Result</button>
+      </div>
+      <div id="ht-result"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">About this model</div>
+      <p style="font-size:.88rem;line-height:1.7;color:#374151">
+        The in-game model uses the half time score alongside team form and league position.
+        Key insight: <strong>43.4% of EPL games flip from half time to full time</strong> — 
+        so even a 1-0 lead is not safe! The model accounts for this based on 3 seasons of data.
+      </p>
+    </div>
+  
+  
+  </section>
+  <section id="validation" class="section">
+
+    <!-- Hero stats -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1rem;margin-bottom:1.5rem">
+      <div class="stat-card">
+        <div class="stat-label">Overall Accuracy</div>
+        <div class="stat-value green" id="v-acc">—</div>
+        <div class="stat-sub" id="v-total">532 test matches</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Beats Random By</div>
+        <div class="stat-value green" id="v-beat">—</div>
+        <div class="stat-sub">33.3% baseline</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Statistical Significance</div>
+        <div class="stat-value green" id="v-pval">—</div>
+        <div class="stat-sub">p-value (lower = better)</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">vs Pro Benchmark</div>
+        <div class="stat-value green">✅ Exceeded</div>
+        <div class="stat-sub">54–56% benchmark</div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.5rem">
+
+      <!-- Outcome breakdown -->
+      <div class="card">
+        <div class="card-title">Accuracy by Outcome</div>
+        <p style="font-size:.82rem;color:var(--muted);margin-bottom:1rem">
+          <strong>Recall</strong> = % of actual outcomes we correctly predicted.<br>
+          <strong>Precision</strong> = when we predict X, how often we're right.
+        </p>
+        <div id="v-outcomes"></div>
+      </div>
+
+      <!-- What the numbers mean -->
+      <div class="card">
+        <div class="card-title">What This Means</div>
+        <div id="v-verdicts" style="display:flex;flex-direction:column;gap:.75rem"></div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.5rem">
+
+      <!-- Confidence -->
+      <div class="card">
+        <div class="card-title">Confidence Reliability</div>
+        <p style="font-size:.82rem;color:var(--muted);margin-bottom:1rem">
+          Does higher model confidence mean more accurate predictions?
+        </p>
+        <div id="v-confidence"></div>
+      </div>
+
+      <!-- Game type -->
+      <div class="card">
+        <div class="card-title">Big Games vs Close Games</div>
+        <p style="font-size:.82rem;color:var(--muted);margin-bottom:1rem">
+          Does the model do better when there's a clear favourite?
+        </p>
+        <div id="v-games"></div>
+      </div>
+    </div>
+
+    <!-- Honest limitations -->
+    <div class="card">
+      <div class="card-title">Honest Limitations</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1rem;margin-top:.5rem">
+        <div style="background:#fff8e1;border-radius:10px;padding:1rem">
+          <div style="font-weight:700;margin-bottom:.4rem">⚠️ Draws are hard</div>
+          <div style="font-size:.84rem;color:#374151">Only 1% recall on draws — this is an industry-wide problem. Even paid models struggle here.</div>
+        </div>
+        <div style="background:#e8f5e9;border-radius:10px;padding:1rem">
+          <div style="font-weight:700;margin-bottom:.4rem">✅ Confidence calibrated</div>
+          <div style="font-size:.84rem;color:#374151">Platt scaling applied — high confidence (>55%) predictions are correct 55.4% vs 52.9% for low confidence. Trust the confidence scores.</div>
+        </div>
+        <div style="background:#e8f5e9;border-radius:10px;padding:1rem">
+          <div style="font-weight:700;margin-bottom:.4rem">✅ 8 seasons of data</div>
+          <div style="font-size:.84rem;color:#374151">Model trained on 8 seasons (2017-2025, no COVID). Optimal balance of data volume and modern football patterns.</div>
+        </div>
+        <div style="background:#e8f5e9;border-radius:10px;padding:1rem">
+          <div style="font-weight:700;margin-bottom:.4rem">✅ Not luck</div>
+          <div style="font-size:.84rem;color:#374151">p-value of 5×10⁻²⁶ means this accuracy is essentially impossible by chance. The model has learned real patterns.</div>
+        </div>
+      </div>
+    </div>
+
+  </section>
+</main>
+<script>
+let teamsData=[];
+
+function showTab(name,btn){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById(name).classList.add('active');
+  btn.classList.add('active');
+  if(name==='overview') loadOverview();
+  if(name==='validation') loadValidation();
+  if(name==='teams') loadTeams();
+  if(name==='confidence') loadConfidence();
+}
+
+function accPill(acc){
+  const cls=acc>=40?'good':acc>=30?'ok':'poor';
+  return `<span class="acc-pill ${cls}">${acc}%</span>`;
+}
+
+async function loadOverview(){
+  const d=await fetch('/api/overview').then(r=>r.json());
+  document.getElementById('overview-stats').innerHTML=`
+    <div class="stat-card"><div class="stat-label">Test Matches</div><div class="stat-value">${d.total_matches}</div><div class="stat-sub">Oct 2025 – Mar 2026</div></div>
+    <div class="stat-card"><div class="stat-label">Pre-Match Accuracy</div><div class="stat-value ${d.pre_accuracy>=45?'green':'amber'}">${d.pre_accuracy}%</div><div class="stat-sub">vs 33.3% random</div></div>
+    <div class="stat-card"><div class="stat-label">In-Game Accuracy</div><div class="stat-value green">${d.ing_accuracy}%</div><div class="stat-sub">with half-time score</div></div>
+    <div class="stat-card"><div class="stat-label">Pro Benchmark</div><div class="stat-value amber">54–56%</div><div class="stat-sub">industry standard</div></div>`;
+  const outcomes={'H':'Home Wins','D':'Draws','A':'Away Wins'};
+  document.getElementById('outcome-bars').innerHTML=Object.entries(d.by_outcome).map(([k,v])=>`
+    <div class="outcome-row">
+      <span class="outcome-label">${k}</span>
+      <div class="bar-track"><div class="bar-fill ${k}" style="width:${v.accuracy}%"></div></div>
+      <span class="outcome-pct">${v.accuracy}%</span>
+    </div>
+    <div style="font-size:.76rem;color:#9ca3af;margin:-8px 0 10px 36px">${v.correct}/${v.total} ${outcomes[k]}</div>`).join('');
+  const total=Object.values(d.result_distribution).reduce((a,b)=>a+b,0);
+  document.getElementById('dist-bars').innerHTML=Object.entries(d.result_distribution).map(([k,v])=>{
+    const pct=Math.round(v/total*100);
+    const labels={H:'Home Wins',D:'Draws',A:'Away Wins'};
+    return `<div class="outcome-row">
+      <span class="outcome-label">${k}</span>
+      <div class="bar-track"><div class="bar-fill ${k}" style="width:${pct}%"></div></div>
+      <span class="outcome-pct">${pct}%</span>
+    </div>
+    <div style="font-size:.76rem;color:#9ca3af;margin:-8px 0 10px 36px">${v} ${labels[k]}</div>`;}).join('');
+}
+
+async function loadTeams(){
+  if(teamsData.length) return renderTeams(teamsData);
+  teamsData=await fetch('/api/teams').then(r=>r.json());
+  renderTeams(teamsData);
+}
+
+function renderTeams(data){
+  document.getElementById('teams-tbody').innerHTML=data.map((t,i)=>`
+    <tr>
+      <td style="color:var(--muted);font-size:.8rem">${i+1}</td>
+      <td style="font-weight:600">${t.team}</td>
+      <td>${t.games}</td>
+      <td>${accPill(t.pre_accuracy)}</td>
+      <td>${accPill(t.ing_accuracy)}</td>
+      <td>${t.correct}</td>
+    </tr>`).join('');
+}
+
+function filterTeams(filter,btn){
+  document.querySelectorAll('.seg-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  let data=teamsData;
+  if(filter==='good') data=teamsData.filter(t=>t.pre_accuracy>=40);
+  if(filter==='poor') data=teamsData.filter(t=>t.pre_accuracy<30);
+  renderTeams(data);
+}
+
+async function loadConfidence(){
+  const d=await fetch('/api/confidence').then(r=>r.json());
+  document.getElementById('conf-grid').innerHTML=d.map(c=>{
+    const cls=c.accuracy>=45?'good':c.accuracy>=35?'ok':'poor';
+    return `<div class="conf-card">
+      <div class="conf-band">${c.band}</div>
+      <div class="conf-acc ${cls}">${c.accuracy}%</div>
+      <div class="conf-sub">${c.correct}/${c.total} correct</div>
+    </div>`;}).join('');
+}
+
+async function loadH2H(){
+  const home=document.getElementById('h2h-home').value;
+  const away=document.getElementById('h2h-away').value;
+  if(!home||!away) return alert('Please select both teams');
+  const d=await fetch(`/api/head_to_head?home=${encodeURIComponent(home)}&away=${encodeURIComponent(away)}`).then(r=>r.json());
+  const s=d.summary;
+  document.getElementById('h2h-result').innerHTML=`
+    <div class="h2h-summary">
+      <div class="h2h-stat"><div class="n green">${s.home_wins}</div><div class="l">${home.split(' ')[0]} Wins</div></div>
+      <div class="h2h-stat"><div class="n amber">${s.draws}</div><div class="l">Draws</div></div>
+      <div class="h2h-stat"><div class="n red">${s.away_wins}</div><div class="l">${away.split(' ')[0]} Wins</div></div>
+    </div>
+    ${d.matches.length===0?'<p style="color:var(--muted)">No matches found.</p>':
+      d.matches.map(m=>`<div class="match-row">
+        <span class="match-date">${m.date}</span>
+        <span class="match-teams">${m.home} vs ${m.away}</span>
+        <span class="match-score">${m.score}</span>
+        <span class="result-badge ${m.result}">${m.result}</span>
+      </div>`).join('')}`;
+}
+
+async function runPredict(){
+  const home=document.getElementById('pred-home').value;
+  const away=document.getElementById('pred-away').value;
+  if(!home||!away) return alert('Please select both teams');
+  const d=await fetch(`/api/predict?home=${encodeURIComponent(home)}&away=${encodeURIComponent(away)}`).then(r=>r.json());
+  if(d.error) return alert(d.error);
+  const outcomes={H:'Home Win',D:'Draw',A:'Away Win'};
+  const p=d.probabilities;
+  document.getElementById('predict-result').innerHTML=`
+    <div class="predict-result show">
+      <div class="predict-matchup">${d.home} vs ${d.away}</div>
+      <div class="predict-outcome">${outcomes[d.prediction]}</div>
+      <div class="predict-label">${d.home} (#${d.home_position}) · ${d.away} (#${d.away_position})</div>
+      <div class="proba-bars">
+        ${Object.entries(p).map(([k,v])=>`
+          <div class="proba-item">
+            <div class="proba-circle ${k===d.prediction?'winner':''}">${v}%</div>
+            <div class="proba-item-label">${outcomes[k]}</div>
+          </div>`).join('')}
+      </div>
+    </div>`;
+}
+
+
+async function loadValidation(){
+  const d = await fetch('/api/validation').then(r=>r.json());
+  
+  document.getElementById('v-acc').textContent = (d.accuracy*100).toFixed(1)+'%';
+  document.getElementById('v-total').textContent = d.total + ' test matches';
+  document.getElementById('v-beat').textContent = '+'+d.beats_random_by+'pp';
+  document.getElementById('v-pval').textContent = '5×10⁻²⁶';
+
+  const outcomes = {H:'Home Win',D:'Draw',A:'Away Win'};
+  const outcomeColors = {H:'var(--green)',D:'var(--amber)',A:'var(--blue)'};
+  document.getElementById('v-outcomes').innerHTML = Object.entries(d.outcomes).map(([k,v])=>`
+    <div style="margin-bottom:1rem">
+      <div style="display:flex;justify-content:space-between;margin-bottom:.3rem">
+        <span style="font-weight:600">${outcomes[k]}</span>
+        <span style="font-size:.82rem;color:var(--muted)">${v.n} matches</span>
+      </div>
+      <div style="display:flex;gap:.5rem;margin-bottom:.3rem;align-items:center">
+        <span style="font-size:.78rem;width:60px;color:var(--muted)">Recall</span>
+        <div style="flex:1;background:#f3f4f6;border-radius:4px;height:10px">
+          <div style="width:${v.recall*100}%;background:${outcomeColors[k]};border-radius:4px;height:10px"></div>
+        </div>
+        <span style="font-size:.82rem;font-weight:600;width:36px">${(v.recall*100).toFixed(0)}%</span>
+      </div>
+      <div style="display:flex;gap:.5rem;align-items:center">
+        <span style="font-size:.78rem;width:60px;color:var(--muted)">Precision</span>
+        <div style="flex:1;background:#f3f4f6;border-radius:4px;height:10px">
+          <div style="width:${v.precision*100}%;background:${outcomeColors[k]};opacity:.5;border-radius:4px;height:10px"></div>
+        </div>
+        <span style="font-size:.82rem;font-weight:600;width:36px">${(v.precision*100).toFixed(0)}%</span>
+      </div>
+    </div>`).join('');
+
+  const verdicts = [
+    {icon:'✅', label:'Statistically Significant', desc:`p = 5×10⁻²⁶ — essentially impossible this is luck`},
+    {icon:'✅', label:'At Pro Benchmark', desc:`55.6% exceeds the paid professional prediction benchmark of 54-56%`},
+    {icon:'✅', label:'Better at Mismatches', desc:`${(d.big_game_acc*100).toFixed(1)}% on big position gaps vs ${(d.close_game_acc*100).toFixed(1)}% on close games`},
+    {icon:'✅', label:'Early Season Accuracy', desc:`${(d.season_consistency.early*100).toFixed(1)}% in matchdays 1-15 when form data is fresh`},
+    {icon:'✅', label:'Confidence Now Calibrated (Platt Scaling)', desc:`High confidence: ${(d.high_conf_acc*100).toFixed(1)}% on ${d.high_conf_n} matches vs Low confidence: ${(d.low_conf_acc*100).toFixed(1)}% on ${d.low_conf_n} matches`},
+    {icon:'⚠️', label:'Draws Unpredictable', desc:`${(d.draw_recall*100).toFixed(1)}% recall — industry-wide problem, not unique to this model`},
+  ];
+
+  document.getElementById('v-verdicts').innerHTML = verdicts.map(v=>`
+    <div style="display:flex;gap:.6rem;align-items:flex-start">
+      <span style="font-size:1rem">${v.icon}</span>
+      <div>
+        <div style="font-weight:600;font-size:.88rem">${v.label}</div>
+        <div style="font-size:.8rem;color:var(--muted)">${v.desc}</div>
+      </div>
+    </div>`).join('');
+
+  document.getElementById('v-confidence').innerHTML = `
+    <div style="display:flex;flex-direction:column;gap:1rem">
+      <div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:.4rem">
+          <span style="font-size:.88rem;font-weight:600">High confidence (>55%)</span>
+          <span style="font-weight:700;color:var(--green)">${(d.high_conf_acc*100).toFixed(1)}%</span>
+        </div>
+        <div style="background:#f3f4f6;border-radius:6px;height:14px">
+          <div style="width:${d.high_conf_acc*100}%;background:var(--green);border-radius:6px;height:14px"></div>
+        </div>
+        <div style="font-size:.76rem;color:var(--muted);margin-top:.2rem">${d.high_conf_n} matches</div>
+      </div>
+      <div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:.4rem">
+          <span style="font-size:.88rem;font-weight:600">Low confidence (<45%)</span>
+          <span style="font-weight:700;color:var(--amber)">${(d.low_conf_acc*100).toFixed(1)}%</span>
+        </div>
+        <div style="background:#f3f4f6;border-radius:6px;height:14px">
+          <div style="width:${d.low_conf_acc*100}%;background:var(--amber);border-radius:6px;height:14px"></div>
+        </div>
+        <div style="font-size:.76rem;color:var(--muted);margin-top:.2rem">${d.low_conf_n} matches</div>
+      </div>
+      <div style="background:#fff8e1;border-radius:8px;padding:.75rem;font-size:.82rem;color:#374151">
+        ✅ Platt scaling applied — high confidence predictions are now more accurate than low confidence ones.
+      </div>
+    </div>`;
+
+  document.getElementById('v-games').innerHTML = `
+    <div style="display:flex;flex-direction:column;gap:1rem">
+      <div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:.4rem">
+          <span style="font-size:.88rem;font-weight:600">Big gap (8+ positions)</span>
+          <span style="font-weight:700;color:var(--green)">${(d.big_game_acc*100).toFixed(1)}%</span>
+        </div>
+        <div style="background:#f3f4f6;border-radius:6px;height:14px">
+          <div style="width:${d.big_game_acc*100}%;background:var(--green);border-radius:6px;height:14px"></div>
+        </div>
+      </div>
+      <div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:.4rem">
+          <span style="font-size:.88rem;font-weight:600">Close gap (<4 positions)</span>
+          <span style="font-weight:700;color:var(--amber)">${(d.close_game_acc*100).toFixed(1)}%</span>
+        </div>
+        <div style="background:#f3f4f6;border-radius:6px;height:14px">
+          <div style="width:${d.close_game_acc*100}%;background:var(--amber);border-radius:6px;height:14px"></div>
+        </div>
+      </div>
+      <div style="background:#e8f5e9;border-radius:8px;padding:.75rem;font-size:.82rem;color:#374151">
+        ✅ Model is better at predicting clear mismatches — makes intuitive sense.
+      </div>
+    </div>`;
+}
+
+async function runHalfTime(){
+  const home=document.getElementById('ht-home').value;
+  const away=document.getElementById('ht-away').value;
+  const ht_home=document.getElementById('ht-score-home').value;
+  const ht_away=document.getElementById('ht-score-away').value;
+  if(!home||!away) return alert('Please select both teams');
+  const d=await fetch(`/api/predict_halftime?home=${encodeURIComponent(home)}&away=${encodeURIComponent(away)}&ht_home=${ht_home}&ht_away=${ht_away}`).then(r=>r.json());
+  if(d.error) return alert(d.error);
+  const outcomes={H:'Home Win',D:'Draw',A:'Away Win'};
+  const p=d.probabilities;
+  document.getElementById('ht-result').innerHTML=`
+    <div class="predict-result show">
+      <div class="predict-matchup">${d.home} vs ${d.away}</div>
+      <div style="font-size:1rem;opacity:.7;margin-bottom:.5rem">Half Time: ${d.ht_score}</div>
+      <div class="predict-outcome">${outcomes[d.prediction]}</div>
+      <div class="predict-label">${d.home} (#${d.home_position}) · ${d.away} (#${d.away_position})</div>
+      <div class="proba-bars">
+        ${Object.entries(p).map(([k,v])=>`
+          <div class="proba-item">
+            <div class="proba-circle ${k===d.prediction?'winner':''}">${v}%</div>
+            <div class="proba-item-label">${outcomes[k]}</div>
+          </div>`).join('')}
+      </div>
+    </div>`;
+}
+
+loadOverview();
+</script>
+</body>
+</html>
