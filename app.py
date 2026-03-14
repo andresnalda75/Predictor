@@ -49,7 +49,6 @@ def _get_cached_fixtures():
         _fixtures_ts    = time.time()
         print(f"[cache] fixtures refreshed ({len(_fixtures_cache)} upcoming)")
     return _fixtures_cache
-os.environ["FOOTBALL_DATA_API_KEY"] = "3966f7fa5a62439e9a84c5ddbc41dae0"  # will use Railway env var in production
 from live_data import fetch_current_season, fetch_standings, fetch_upcoming, CREST_MAP
 from injury_data import load_injuries, get_injury_count
 
