@@ -147,16 +147,13 @@
   .fixture-pred.H{background:var(--green);}
   .fixture-pred.D{background:var(--amber);color:var(--ink);}
   .fixture-pred.A{background:var(--blue);}
-  .fixture-conf{font-size:.68rem;color:var(--muted);flex-shrink:0;}
+  .fixture-conf-inline{font-weight:400;font-family:'DM Sans',sans-serif;font-size:.62rem;opacity:.85;margin-left:.15rem;}
   .fixture-probs{display:flex;gap:.4rem;font-size:.72rem;flex-shrink:0;}
   .fixture-probs span{padding:.1rem .4rem;border-radius:99px;background:#f3f4f6;}
   @media(max-width:700px){.fixture-probs{display:none;}}
   .fixtures-filter{display:flex;gap:.5rem;margin-bottom:1.5rem;flex-wrap:wrap;}
   .team-crest{width:16px;height:16px;object-fit:contain;vertical-align:middle;margin-right:3px;}
   .ha-label{font-size:.62rem;font-weight:700;color:var(--muted);margin-right:2px;vertical-align:middle;}
-  .fixture-conf.good{color:var(--green);font-weight:700;}
-  .fixture-conf.ok{color:var(--amber);font-weight:700;}
-  .fixture-conf.poor{color:var(--muted);}
   .seg-toggle{display:flex;gap:.5rem;margin-bottom:1rem;flex-wrap:wrap;}
   .seg-btn{padding:.35rem .9rem;border-radius:99px;border:1px solid var(--border);
     background:white;font-family:'DM Sans',sans-serif;font-size:.82rem;cursor:pointer;transition:all .15s;}
@@ -879,18 +876,17 @@ function renderFixtures(mode){
     html += `<div class="matchday-block"><div class="matchday-title">Matchday ${md}</div>`;
     games.forEach(f => {
       const p = f.probabilities;
-      const predLabel = f.prediction==='H' ? f.home : f.prediction==='A' ? f.away : 'Draw';
+      const _abbr = {'Arsenal':'ARS','Aston Villa':'AVL','Bournemouth':'BOU','Brentford':'BRE','Brighton':'BHA','Chelsea':'CHE','Crystal Palace':'CPL','Everton':'EVE','Fulham':'FUL','Ipswich':'IPS','Leeds United':'LEE','Leicester':'LEI','Liverpool':'LIV','Man City':'MCI','Man United':'MUN','Newcastle':'NEW',"Nott'm Forest":'NFO','Southampton':'SOU','Tottenham':'TOT','West Ham':'WHU','Wolves':'WOL'};
+      const predLabel = f.prediction==='H' ? (_abbr[f.home]||f.home) : f.prediction==='A' ? (_abbr[f.away]||f.away) : 'DRW';
       const homeCrest = f.home_crest ? `<img src="${f.home_crest}" class="team-crest">` : '';
       const awayCrest = f.away_crest ? `<img src="${f.away_crest}" class="team-crest">` : '';
-      const confClass = f.confidence >= 60 ? 'good' : f.confidence >= 50 ? 'ok' : 'poor';
       html += `<div class="fixture-row">
         <div class="fixture-date">${f.date}</div>
         <div class="fixture-teams">
           <div class="fixture-team-line">${homeCrest}<span class="ha-label">H</span>${f.home}${formDots(f.home_form)}</div>
           <div class="fixture-team-line">${awayCrest}<span class="ha-label">A</span>${f.away}${formDots(f.away_form)}</div>
         </div>
-        <div class="fixture-pred ${f.prediction}">${predLabel}</div>
-        <div class="fixture-conf ${confClass}">${f.confidence}%</div>
+        <div class="fixture-pred ${f.prediction}">${predLabel} <span class="fixture-conf-inline">${f.confidence}%</span></div>
         <div class="fixture-probs">
           <span>H ${p.H}%</span>
           <span>D ${p.D}%</span>
