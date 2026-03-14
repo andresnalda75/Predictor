@@ -241,7 +241,7 @@
     <div class="card">
       <div class="card-title">About this prediction</div>
       <p style="font-size:.88rem;line-height:1.7;color:#374151">
-        Uses the <strong>pre-match model (48.1% accuracy)</strong> trained on 3 seasons of EPL data.
+        Uses the <strong>pre-match model (<span id="about-pre-acc">…</span> accuracy)</strong> trained on 8 seasons of EPL data (2017–2025).
         Features include last-5 form, home/away specific form, current league position and points.
       </p>
     </div>
@@ -251,7 +251,7 @@
     <div class="card" style="margin-bottom:1rem">
       <div class="card-title">Half Time Predictor</div>
       <p style="font-size:.85rem;color:var(--muted);margin-bottom:1.5rem">
-        Enter the teams and half time score to predict the final result using the in-game model (55.3% accuracy)
+        Enter the teams and half time score to predict the final result using the in-game model (<span id="about-ht-acc">…</span> accuracy)
       </p>
       <div class="predict-form">
         <select id="ht-home"><option value="">— Home Team —</option>{% for t in teams %}<option>{{ t }}</option>{% endfor %}</select>
@@ -395,6 +395,9 @@ async function loadOverview(){
       <span class="outcome-pct">${pct}%</span>
     </div>
     <div style="font-size:.76rem;color:#9ca3af;margin:-8px 0 10px 36px">${v} ${labels[k]}</div>`;}).join('');
+  // Populate accuracy spans in Predict and Half Time description cards
+  document.getElementById('about-pre-acc').textContent = d.pre_accuracy+'%';
+  document.getElementById('about-ht-acc').textContent = d.ing_accuracy+'%';
 }
 
 async function loadTeams(){
