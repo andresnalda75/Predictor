@@ -67,6 +67,26 @@ Flask web app deployed on Railway that predicts EPL match outcomes using XGBoost
 | 9 | **SHAP explainability** | Show users WHY each prediction was made (feature contributions) |
 | 10 | **Siamese network** | Encode matchup directly as a team pair rather than two separate feature vectors |
 
+### DRAW IMPROVEMENT STRATEGIES (ordered by priority)
+
+Current draw recall is 0% — the model never predicts draws. This is the single biggest weakness.
+
+**Why draws are hard:**
+- Draws are 23% of EPL matches but the model predicts almost none
+- XGBoost maximises overall accuracy — predicting never-draw costs only 23% but gains H/A precision
+- Bookmaker odds features made it worse — the market also rarely prices draws as favourite
+- Our `shots_against` features already capture defensive strength partially but lack relative context
+- Our current 47 features include `home_shots_against_avg` and `home_sot_against_avg` (defensive shots allowed) but these are absolute rolling averages, not relative strength ratings
+
+| Priority | Strategy | Est. Impact | Complexity |
+|---|---|---|---|
+| 1 | **Dixon-Coles P(draw) as hybrid feature** — run a Dixon-Coles Poisson model alongside XGBoost, use its P(draw) output as an additional input feature. Keeps XGBoost accuracy gains while adding draw intelligence. | Draw recall +10-15% | Medium — need to implement Dixon-Coles in Python, compute per-match P(draw) for all historical matches |
+| 2 | **Custom draw threshold** — instead of `argmax(H,D,A)`, predict draw when `P(draw) > 0.28`. 5 lines of code. Test immediately after next retrain. | Draw recall +5-10% | Trivial — post-processing only, no retrain needed |
+| 3 | **Draw-specific features** — add features that correlate specifically with draws: `elo_gap` (absolute ELO difference, small gap = more likely draw), `b365_draw_odds` (bookmaker draw odds < 3.5 signals likely draw), `h2h_draw_rate` (historical draw rate between these two teams), `both_low_scoring` (both teams average under 1.2 goals per game) | Draw recall +5-8% | Low — derived from existing data |
+| 4 | **Dixon-Coles attack/defense ratings** — add 4 new features: `home_attack_rating` (goals scored relative to opposition defense strength), `home_defense_rating` (goals conceded relative to opposition attack strength), `away_attack_rating`, `away_defense_rating`. These are relative strength ratings (like Pi-ratings but split attack/defense). Different from rolling averages — Arsenal scoring 3 vs Ipswich means less than scoring 3 vs Man City. | Accuracy +1-2%, draw recall +5% | Medium — need to implement iterative rating system |
+| 5 | **Full Dixon-Coles parallel model** — replace XGBoost for draw predictions only, use XGBoost for H/A. Ensemble the two. | Draw recall +15-20% | High — two separate models, need calibration |
+| 6 | **SMOTE oversampling for draws** — synthetically oversample draw examples in training data. Last resort — risk to overall accuracy. | Draw recall +5-10% | Low — but may degrade H/A accuracy |
+
 ### TIER 3 — LONGER TERM
 
 | # | Improvement | Notes |
