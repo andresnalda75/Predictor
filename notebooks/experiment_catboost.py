@@ -184,8 +184,15 @@ def make_lgbm(params=None):
 # ─────────────────────────────────────────────────────────────────────────────
 
 def optuna_catboost(train_df, cols, le, n_trials=80):
-    """Optuna hyperparameter search for CatBoost using walk-forward CV."""
-    print(f"\n  Running Optuna for CatBoost ({n_trials} trials)...")
+    """Optuna hyperparameter search for CatBoost using 80/20 split (fast)."""
+    print(f"\n  Running Optuna for CatBoost ({n_trials} trials, 80/20 split)...")
+
+    # Single 80/20 split within the training data for fast evaluation
+    optuna_split = int(len(train_df) * 0.8)
+    opt_train = train_df.iloc[:optuna_split]
+    opt_val = train_df.iloc[optuna_split:]
+    y_train_enc = le.transform(opt_train["result"])
+    print(f"  Optuna split: train={len(opt_train)}, val={len(opt_val)}")
 
     def objective(trial):
         params = {
@@ -197,35 +204,31 @@ def optuna_catboost(train_df, cols, le, n_trials=80):
             "random_strength": trial.suggest_float("random_strength", 1e-3, 10.0, log=True),
             "border_count": trial.suggest_int("border_count", 32, 255),
         }
-        # Walk-forward score
-        n = len(train_df)
-        split = MIN_TRAIN
-        accs = []
-        while split < n:
-            end = min(split + FOLD_SIZE, n)
-            tr = train_df.iloc[:split]
-            te = train_df.iloc[split:end]
-            model = CatBoostClassifier(
-                verbose=0, random_seed=42, eval_metric="MultiClass",
-                auto_class_weights="Balanced", **params
-            )
-            model.fit(tr[cols], le.transform(tr["result"]))
-            preds = le.inverse_transform(model.predict(te[cols]).astype(int))
-            accs.append(accuracy_score(te["result"], preds))
-            split += FOLD_SIZE
-        return np.mean(accs)
+        model = CatBoostClassifier(
+            verbose=0, random_seed=42, eval_metric="MultiClass",
+            auto_class_weights="Balanced", **params
+        )
+        model.fit(opt_train[cols], y_train_enc)
+        preds = le.inverse_transform(model.predict(opt_val[cols]).astype(int))
+        return accuracy_score(opt_val["result"], preds)
 
     study = optuna.create_study(direction="maximize")
     study.optimize(objective, n_trials=n_trials, show_progress_bar=True)
 
-    print(f"  Best CatBoost walk-forward accuracy: {study.best_value:.3%}")
+    print(f"  Best CatBoost validation accuracy: {study.best_value:.3%}")
     print(f"  Best params: {study.best_params}")
     return study.best_params, study
 
 
 def optuna_lgbm(train_df, cols, le, n_trials=80):
-    """Optuna hyperparameter search for LightGBM using walk-forward CV."""
-    print(f"\n  Running Optuna for LightGBM ({n_trials} trials)...")
+    """Optuna hyperparameter search for LightGBM using 80/20 split (fast)."""
+    print(f"\n  Running Optuna for LightGBM ({n_trials} trials, 80/20 split)...")
+
+    optuna_split = int(len(train_df) * 0.8)
+    opt_train = train_df.iloc[:optuna_split]
+    opt_val = train_df.iloc[optuna_split:]
+    y_train_enc = le.transform(opt_train["result"])
+    print(f"  Optuna split: train={len(opt_train)}, val={len(opt_val)}")
 
     def objective(trial):
         params = {
@@ -239,26 +242,17 @@ def optuna_lgbm(train_df, cols, le, n_trials=80):
             "reg_lambda": trial.suggest_float("reg_lambda", 1e-8, 10.0, log=True),
             "num_leaves": trial.suggest_int("num_leaves", 15, 127),
         }
-        n = len(train_df)
-        split = MIN_TRAIN
-        accs = []
-        while split < n:
-            end = min(split + FOLD_SIZE, n)
-            tr = train_df.iloc[:split]
-            te = train_df.iloc[split:end]
-            model = lgb.LGBMClassifier(
-                class_weight="balanced", random_state=42, verbose=-1, **params
-            )
-            model.fit(tr[cols], le.transform(tr["result"]))
-            preds = le.inverse_transform(model.predict(te[cols]))
-            accs.append(accuracy_score(te["result"], preds))
-            split += FOLD_SIZE
-        return np.mean(accs)
+        model = lgb.LGBMClassifier(
+            class_weight="balanced", random_state=42, verbose=-1, **params
+        )
+        model.fit(opt_train[cols], y_train_enc)
+        preds = le.inverse_transform(model.predict(opt_val[cols]))
+        return accuracy_score(opt_val["result"], preds)
 
     study = optuna.create_study(direction="maximize")
     study.optimize(objective, n_trials=n_trials, show_progress_bar=True)
 
-    print(f"  Best LightGBM walk-forward accuracy: {study.best_value:.3%}")
+    print(f"  Best LightGBM validation accuracy: {study.best_value:.3%}")
     print(f"  Best params: {study.best_params}")
     return study.best_params, study
 
