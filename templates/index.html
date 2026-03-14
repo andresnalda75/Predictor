@@ -143,7 +143,8 @@
   .fixture-team-line{display:flex;align-items:center;}
   .fixture-teams span{color:var(--muted);font-weight:400;margin:0 .3rem;}
   .fixture-pred{font-family:'Archivo Black',sans-serif;font-size:.72rem;
-    padding:.2rem .5rem;border-radius:99px;color:white;flex-shrink:0;}
+    padding:.2rem .5rem;border-radius:99px;color:white;flex-shrink:0;
+    min-width:4.2rem;text-align:center;}
   .fixture-pred.H{background:var(--green);}
   .fixture-pred.D{background:var(--amber);color:var(--ink);}
   .fixture-pred.A{background:var(--blue);}
@@ -876,8 +877,9 @@ function renderFixtures(mode){
     html += `<div class="matchday-block"><div class="matchday-title">Matchday ${md}</div>`;
     games.forEach(f => {
       const p = f.probabilities;
-      const _abbr = {'Arsenal':'ARS','Aston Villa':'AVL','Bournemouth':'BOU','Brentford':'BRE','Brighton':'BHA','Chelsea':'CHE','Crystal Palace':'CPL','Everton':'EVE','Fulham':'FUL','Ipswich':'IPS','Leeds United':'LEE','Leicester':'LEI','Liverpool':'LIV','Man City':'MCI','Man United':'MUN','Newcastle':'NEW',"Nott'm Forest":'NFO','Southampton':'SOU','Tottenham':'TOT','West Ham':'WHU','Wolves':'WOL'};
-      const predLabel = f.prediction==='H' ? (_abbr[f.home]||f.home) : f.prediction==='A' ? (_abbr[f.away]||f.away) : 'DRW';
+      const _a = {'Arsenal':'ARS','Aston Villa':'AVL','Bournemouth':'BOU','Brentford':'BRE','Brighton':'BHA','Burnley':'BUR','Chelsea':'CHE','Crystal Palace':'CPL','Everton':'EVE','Fulham':'FUL','Ipswich':'IPS','Leeds United':'LEE','Leicester':'LEI','Liverpool':'LIV','Man City':'MCI','Man United':'MUN','Newcastle':'NEW',"Nott'm Forest":'NFO','Southampton':'SOU','Sunderland':'SUN','Tottenham':'TOT','West Ham':'WHU','Wolves':'WOL'};
+      const _ab = n => _a[n] || n.slice(0,3).toUpperCase();
+      const predLabel = f.prediction==='H' ? _ab(f.home) : f.prediction==='A' ? _ab(f.away) : 'DRW';
       const homeCrest = f.home_crest ? `<img src="${f.home_crest}" class="team-crest">` : '';
       const awayCrest = f.away_crest ? `<img src="${f.away_crest}" class="team-crest">` : '';
       html += `<div class="fixture-row">
