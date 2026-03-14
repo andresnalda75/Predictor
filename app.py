@@ -59,6 +59,21 @@ test_df["confidence"] = (proba.max(axis=1) * 100).round(1)
 test_df["home_position"] = test_features["home_position"].values
 test_df["away_position"] = test_features["away_position"].values
 
+# Build halftime model test set using the same split
+ht_test_feats = hist_model.iloc[split:].copy().reset_index(drop=True)
+ht_test_matches = hist_df.iloc[-len(X_test):].copy().reset_index(drop=True)
+ht_test_feats["ht_home"] = ht_test_matches["ht_home"].values
+ht_test_feats["ht_away"] = ht_test_matches["ht_away"].values
+ht_test_feats["ht_gd"] = ht_test_feats["ht_home"] - ht_test_feats["ht_away"]
+ht_test_feats["ht_result_H"] = (ht_test_feats["ht_gd"] > 0).astype(int)
+ht_test_feats["ht_result_D"] = (ht_test_feats["ht_gd"] == 0).astype(int)
+ht_test_feats["ht_result_A"] = (ht_test_feats["ht_gd"] < 0).astype(int)
+ht_valid = ht_test_feats.dropna(subset=["ht_home", "ht_away"])
+ht_pred = xgb_halftime.predict(ht_valid[HT_COLS])
+ht_predicted = le.inverse_transform(ht_pred)
+ht_accuracy = round((ht_predicted == ht_test_matches.loc[ht_valid.index, "result"].values).mean() * 100, 1)
+print(f"✅ Halftime model test accuracy: {ht_accuracy}%")
+
 # Use most recent season for live predictions - append live API data
 import pandas as pd
 if live_season is not None:
@@ -127,7 +142,7 @@ def api_overview():
             "accuracy": round(sub["correct"].mean()*100,1) if len(sub) else 0
         }
     return jsonify({"total_matches":len(test_df),"pre_accuracy":acc,
-                    "ing_accuracy":acc,"random_baseline":33.3,
+                    "ing_accuracy":ht_accuracy,"random_baseline":33.3,
                     "result_distribution":dist,"by_outcome":by_outcome})
 
 @app.route("/api/teams")
