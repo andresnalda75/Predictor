@@ -4,6 +4,14 @@ import numpy as np
 import pickle
 import os
 import json
+import logging
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
+log = logging.getLogger(__name__)
 
 app = Flask(__name__)
 
@@ -459,6 +467,8 @@ def api_predict():
     proba  = xgb_champion.predict_proba(feats)[0]
     labels = le.classes_
     pred   = labels[np.argmax(proba)]
+    conf   = round(float(proba.max()) * 100, 1)
+    log.info("predict: %s vs %s → %s (%.1f%% confidence)", home, away, pred, conf)
     return jsonify({
         "home":home,"away":away,"prediction":pred,
         "probabilities":{l:round(float(p)*100,1) for l,p in zip(labels,proba)},
@@ -593,6 +603,8 @@ def api_predict_fixtures():
             pred   = labels[np.argmax(proba)]
             probas = {l:round(float(p)*100,1) for l,p in zip(labels,proba)}
 
+            conf = round(max(probas.values()), 1)
+            log.info("fixture: %s vs %s → %s (%.1f%% confidence)", home, away, pred, conf)
             results.append({
                 "matchday":   fix["matchday"],
                 "date":       fix["date"],
@@ -600,7 +612,7 @@ def api_predict_fixtures():
                 "away":       away,
                 "prediction": pred,
                 "probabilities": probas,
-                "confidence": round(max(probas.values()), 1),
+                "confidence": conf,
                 "home_position": h_pos,
                 "away_position": a_pos,
                 "home_crest": fix.get("home_crest", ""),
