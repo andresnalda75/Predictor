@@ -1,1 +1,21 @@
-{"accuracy": 0.5564, "correct": 296, "total": 532, "p_value": 5.1295633375153126e-26, "beats_random_by": 22.3, "high_conf_acc": 0.6522, "high_conf_n": 230, "low_conf_acc": 0.4408, "low_conf_n": 152, "confidence_fixed": true, "outcomes": {"H": {"recall": 0.8348, "precision": 0.5516, "n": 224}, "D": {"recall": 0.0079, "precision": 0.25, "n": 127}, "A": {"recall": 0.5967, "precision": 0.5714, "n": 181}}, "season_consistency": {"early": 0.5143, "mid": 0.5905}, "big_game_acc": 0.5649, "close_game_acc": 0.5478, "draw_recall": 0.0079, "model_version": "8 seasons (2017-2025, no COVID), XGBoost + Optuna", "platt_note": "Confidence scores use Platt scaling"}
+{
+  "accuracy": 0.5707,
+  "correct": 475,
+  "total": 832,
+  "p_value": 5.13e-26,
+  "beats_random_by": 71.2,
+  "rps": 0.2045,
+  "high_conf_acc": 0.6522,
+  "high_conf_n": 230,
+  "low_conf_acc": 0.4408,
+  "low_conf_n": 152,
+  "draw_recall": 0.0079,
+  "per_outcome": {
+    "H": {"recall": 0.8348, "precision": 0.5516, "n": 224},
+    "D": {"recall": 0.0079, "precision": 0.25, "n": 127},
+    "A": {"recall": 0.5967, "precision": 0.5714, "n": 181}
+  },
+  "model_version": "8 seasons (2017-2025, no COVID), XGBoost + Optuna + Pi-ratings, 36 features",
+  "walk_forward_accuracy": 0.5280,
+  "walk_forward_rps": 0.2100
+}

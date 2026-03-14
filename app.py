@@ -45,6 +45,13 @@ with open(os.path.join(BASE, "models/label_encoder.pkl"), "rb") as f:
 hist_df = pd.read_csv(os.path.join(BASE, "data/hist_matches.csv"), parse_dates=["date"])
 hist_feat = pd.read_csv(os.path.join(BASE, "data/hist_features.csv"))
 
+# Load validated accuracy from validation.json (source of truth from Colab retrain)
+_val_path = os.path.join(BASE, "data/validation.json")
+with open(_val_path) as _vf:
+    _validation = json.load(_vf)
+VALIDATED_ACCURACY = round(_validation["accuracy"] * 100, 1)
+print(f"✅ Validated accuracy from validation.json: {VALIDATED_ACCURACY}%")
+
 # Load Pi-ratings (team-level final ratings for live prediction)
 pi_team_path = os.path.join(BASE, "data/pi_team_ratings.csv")
 if os.path.exists(pi_team_path):
@@ -262,7 +269,6 @@ def api_current_teams():
 
 @app.route("/api/overview")
 def api_overview():
-    acc = round(test_df["correct"].mean()*100,1)
     dist = test_df["result"].value_counts().to_dict()
     by_outcome = {}
     for o in ["H","D","A"]:
@@ -272,7 +278,7 @@ def api_overview():
             "correct": int(sub["correct"].sum()),
             "accuracy": round(sub["correct"].mean()*100,1) if len(sub) else 0
         }
-    return jsonify({"total_matches":len(test_df),"pre_accuracy":acc,
+    return jsonify({"total_matches":len(test_df),"pre_accuracy":VALIDATED_ACCURACY,
                     "ing_accuracy":ht_accuracy,"random_baseline":33.3,
                     "result_distribution":dist,"by_outcome":by_outcome})
 
