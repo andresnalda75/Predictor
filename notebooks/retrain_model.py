@@ -615,8 +615,9 @@ def main():
 
     le = LabelEncoder().fit(["H", "D", "A"])
 
-    # All candidate features (exclude result)
-    all_feature_cols = [c for c in feat_df.columns if c != "result"]
+    # All candidate features (exclude non-feature columns)
+    NON_FEATURE_COLS = {"result", "date", "home_team", "away_team", "season_code"}
+    all_feature_cols = [c for c in feat_df.columns if c not in NON_FEATURE_COLS]
     print(f"   Candidate features: {len(all_feature_cols)}")
 
     # ── 4. RFE feature selection ──────────────────────────────────────────────
