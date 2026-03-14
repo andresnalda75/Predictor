@@ -8,6 +8,7 @@ import json
 app = Flask(__name__)
 
 import threading, time, os
+_startup_time = time.time()
 os.environ["FOOTBALL_DATA_API_KEY"] = "3966f7fa5a62439e9a84c5ddbc41dae0"  # will use Railway env var in production
 from live_data import fetch_current_season, fetch_standings, fetch_upcoming, CREST_MAP
 from injury_data import load_injuries, get_injury_count
@@ -253,6 +254,16 @@ def get_h2h_record(home, away, n=10):
                  ((matches["away_team"]==away)&(matches["result"]=="A")).sum())
     draws  = int((matches["result"]=="D").sum())
     return h_wins, draws, a_wins
+
+@app.route("/health")
+def health():
+    return jsonify({
+        "status":          "ok",
+        "uptime_seconds":  int(time.time() - _startup_time),
+        "live_data":       live_season is not None,
+        "standings":       len(standings_cache) > 0,
+        "model":           "xgb_champion",
+    })
 
 @app.route("/")
 def index():
