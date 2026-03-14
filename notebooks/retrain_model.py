@@ -198,6 +198,7 @@ def build_features(matches_df, pi_df):
         pi_diff = row["pi_diff"]
 
         feat = {
+            "date": str(row["date"])[:10], "home_team": home, "away_team": away,
             "home_form_pts": h_pts, "home_form_gf": h_gf, "home_form_ga": h_ga,
             "home_form_gd": h_gf - h_ga, "home_form_wins": h_wins, "home_form_draws": h_draws,
             "away_form_pts": a_pts, "away_form_gf": a_gf, "away_form_ga": a_ga,

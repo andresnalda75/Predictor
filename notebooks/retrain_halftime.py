@@ -21,6 +21,7 @@ What it does:
 """
 
 import os
+import sys
 import json
 import pickle
 import datetime
@@ -86,36 +87,34 @@ def build_ht_features(hist_feat, hist_matches):
     feature matrix. The HT model uses pre-match context + the live HT score
     to predict the full-time result.
 
+    Joins on date + home_team + away_team to handle row count mismatches
+    (hist_features.csv may have fewer rows due to filtering during build).
+
     Returns DataFrame with all pre-match features + HT columns + result.
     """
     print("\n  Building halftime feature matrix...")
+    print(f"  hist_features: {len(hist_feat)} rows, hist_matches: {len(hist_matches)} rows")
 
-    # hist_features.csv was built from hist_matches.csv chronologically.
-    # It has fewer rows (filtered where form > 0). We need to align them
-    # by taking the tail of hist_matches to match hist_features row count.
-    n_feat = len(hist_feat)
-    n_match = len(hist_matches)
+    feat = hist_feat.copy()
 
-    # The feature rows correspond to the LAST n_feat matches in hist_matches
-    matches_aligned = hist_matches.iloc[n_match - n_feat:].reset_index(drop=True)
-    feat = hist_feat.reset_index(drop=True)
-
-    # Sanity check: results should match
-    mismatches = (feat["result"] != matches_aligned["result"]).sum()
-    if mismatches > 0:
-        print(f"  ⚠️  {mismatches} result mismatches between features and matches!")
-        print("  Falling back to date+team matching...")
-        # Fallback: merge on date + teams
-        matches_aligned = hist_matches.copy()
-        matches_aligned["date_str"] = matches_aligned["date"].astype(str).str[:10]
-        feat["_idx"] = feat.index
-        # This shouldn't happen if files are in sync, but be safe
+    # Normalize date column in hist_feat to string for joining
+    if "date" in feat.columns:
+        feat["date"] = feat["date"].astype(str).str[:10]
     else:
-        print(f"  ✅ {n_feat} rows aligned correctly")
+        print("  ⚠️  hist_features.csv missing date column — cannot merge by key")
+        print("  Re-run notebooks/retrain_model.py first to rebuild with join keys")
+        sys.exit(1)
 
-    # Add HT columns
-    feat["ht_home"] = matches_aligned["ht_home"].values
-    feat["ht_away"] = matches_aligned["ht_away"].values
+    # Prepare match HT data for merge
+    ht_cols = hist_matches[["date", "home_team", "away_team", "ht_home", "ht_away"]].copy()
+    ht_cols["date"] = ht_cols["date"].astype(str).str[:10]
+
+    # Merge on the three key columns
+    before = len(feat)
+    feat = feat.merge(ht_cols, on=["date", "home_team", "away_team"], how="inner")
+    print(f"  Merged: {len(feat)} rows ({before - len(feat)} unmatched dropped)")
+
+    # Derive HT features
     feat["ht_gd"] = feat["ht_home"] - feat["ht_away"]
     feat["ht_result_H"] = (feat["ht_gd"] > 0).astype(int)
     feat["ht_result_D"] = (feat["ht_gd"] == 0).astype(int)
@@ -124,9 +123,11 @@ def build_ht_features(hist_feat, hist_matches):
     # Drop rows with missing HT data
     before = len(feat)
     feat = feat.dropna(subset=["ht_home", "ht_away"]).reset_index(drop=True)
-    after = len(feat)
-    if before != after:
-        print(f"  Dropped {before - after} rows with missing HT data")
+    if before != len(feat):
+        print(f"  Dropped {before - len(feat)} rows with missing HT data")
+
+    # Drop join key columns (not features)
+    feat = feat.drop(columns=["date", "home_team", "away_team"])
 
     print(f"  Final: {len(feat)} rows, {len(feat.columns)} columns")
     return feat
