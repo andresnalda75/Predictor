@@ -491,18 +491,36 @@ def api_predict_halftime():
     aa_pts,aa_gf,aa_ga,_,_          = get_form(away, away_only=True)
     h_pos,h_lpts,h_lgd              = get_standing(home)
     a_pos,a_lpts,a_lgd              = get_standing(away)
+    h_sh,h_sha,h_sot,h_sota        = get_rolling_shots(home)
+    a_sh,a_sha,a_sot,a_sota        = get_rolling_shots(away)
     elo_home = hist_df[hist_df["home_team"]==home]["elo_home"].iloc[-1] if len(hist_df[hist_df["home_team"]==home]) else 1500
     elo_away = hist_df[hist_df["away_team"]==away]["elo_away"].iloc[-1] if len(hist_df[hist_df["away_team"]==away]) else 1500
+    h_pi_rh, h_pi_ra, _ = get_pi_rating(home)
+    a_pi_rh, a_pi_ra, _ = get_pi_rating(away)
 
     ht_gd = ht_home - ht_away
 
     feat_dict = {
-        "home_form_pts":h_pts,"home_form_gd":h_gf-h_ga,
-        "away_form_pts":a_pts,"away_form_gd":a_gf-a_ga,
-        "home_home_pts":hh_pts,"away_away_pts":aa_pts,
+        "home_form_pts":h_pts,"home_form_gf":h_gf,"home_form_ga":h_ga,
+        "home_form_gd":h_gf-h_ga,"home_form_wins":h_wins,"home_form_draws":h_draws,
+        "away_form_pts":a_pts,"away_form_gf":a_gf,"away_form_ga":a_ga,
+        "away_form_gd":a_gf-a_ga,"away_form_wins":a_wins,"away_form_draws":a_draws,
+        "home_home_pts":hh_pts,"home_home_gd":hh_gf-hh_ga,
+        "away_away_pts":aa_pts,"away_away_gd":aa_gf-aa_ga,
         "pts_diff":h_pts-a_pts,"gd_diff":(h_gf-h_ga)-(a_gf-a_ga),
-        "position_diff":a_pos-h_pos,"league_pts_diff":h_lpts-a_lpts,
+        "home_position":h_pos,"away_position":a_pos,"position_diff":a_pos-h_pos,
+        "home_league_pts":h_lpts,"away_league_pts":a_lpts,
+        "league_pts_diff":h_lpts-a_lpts,
+        "home_league_gd":h_lgd,"away_league_gd":a_lgd,
+        "matchday":30,
         "elo_home":elo_home,"elo_away":elo_away,"elo_diff":elo_home-elo_away,
+        "pi_home":h_pi_rh,"pi_away":a_pi_ra,"pi_diff":h_pi_rh-a_pi_ra,
+        "home_shots_avg":h_sh,"home_shots_against_avg":h_sha,
+        "home_sot_avg":h_sot,"home_sot_against_avg":h_sota,
+        "away_shots_avg":a_sh,"away_shots_against_avg":a_sha,
+        "away_sot_avg":a_sot,"away_sot_against_avg":a_sota,
+        "shots_diff":h_sh-a_sh,"sot_diff":h_sot-a_sot,
+        "corners_diff":0,
         "ht_home":ht_home,"ht_away":ht_away,"ht_gd":ht_gd,
         "ht_result_H":1 if ht_gd>0 else 0,
         "ht_result_D":1 if ht_gd==0 else 0,
