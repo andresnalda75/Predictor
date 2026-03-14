@@ -707,8 +707,8 @@ async function loadValidation(){
 
   // Favourites vs toss-ups — from validation.json
   document.getElementById('v-games').innerHTML =
-    confBar('Clear favourite (8+ position gap)', val.big_game_acc, '', 'var(--green)', '') +
-    confBar('Toss-up (<4 position gap)', val.close_game_acc, '', 'var(--amber)', '') +
+    confBar('Clear favourite (8+ position gap)', val.big_game_acc, val.big_game_n, 'var(--green)', '') +
+    confBar('Toss-up (<4 position gap)', val.close_game_acc, val.close_game_n, 'var(--amber)', '') +
     `<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:.75rem;font-size:.82rem;color:#166534;margin-top:.5rem">
       Model is sharper when there's a clear gap between the teams.
     </div>`;

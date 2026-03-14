@@ -425,6 +425,28 @@ def full_evaluate(model, le, cols, X_test, y_test):
         )
         print(f"  Low confidence  (<50%): {low_acc:.3%} on {low_mask.sum()} matches")
 
+    # Position gap analysis (favourites vs toss-ups)
+    big_game_acc = close_game_acc = None
+    big_game_n = close_game_n = 0
+    if "position_diff" in X_test.columns:
+        pos_gap = X_test["position_diff"].abs()
+        big_mask = pos_gap >= 8
+        close_mask = pos_gap < 4
+        if big_mask.sum() > 0:
+            big_game_acc = round(float(accuracy_score(
+                [y_true[i] for i in range(len(y_true)) if big_mask.iloc[i]],
+                [y_pred[i] for i in range(len(y_pred)) if big_mask.iloc[i]]
+            )), 4)
+            big_game_n = int(big_mask.sum())
+            print(f"\n  Big gap (8+ pos): {big_game_acc:.3%} on {big_game_n} matches")
+        if close_mask.sum() > 0:
+            close_game_acc = round(float(accuracy_score(
+                [y_true[i] for i in range(len(y_true)) if close_mask.iloc[i]],
+                [y_pred[i] for i in range(len(y_pred)) if close_mask.iloc[i]]
+            )), 4)
+            close_game_n = int(close_mask.sum())
+            print(f"  Close gap (<4 pos): {close_game_acc:.3%} on {close_game_n} matches")
+
     return {
         "accuracy": round(acc, 4),
         "correct": int(sum(p == a for p, a in zip(y_pred, y_true))),
@@ -435,6 +457,10 @@ def full_evaluate(model, le, cols, X_test, y_test):
         "high_conf_n": int(high_mask.sum()),
         "low_conf_acc": round(float(low_acc), 4) if low_mask.sum() > 0 else None,
         "low_conf_n": int(low_mask.sum()),
+        "big_game_acc": big_game_acc,
+        "big_game_n": big_game_n,
+        "close_game_acc": close_game_acc,
+        "close_game_n": close_game_n,
         "per_outcome": {k: {kk: round(vv, 4) for kk, vv in v.items()} for k, v in report.items() if k in ["H", "D", "A"]},
     }
 
@@ -527,6 +553,10 @@ def save_model(model, le, cols, eval_stats, wf_stats, best_params):
         "high_conf_n": eval_stats.get("high_conf_n"),
         "low_conf_acc": eval_stats.get("low_conf_acc"),
         "low_conf_n": eval_stats.get("low_conf_n"),
+        "big_game_acc": eval_stats.get("big_game_acc"),
+        "big_game_n": eval_stats.get("big_game_n", 0),
+        "close_game_acc": eval_stats.get("close_game_acc"),
+        "close_game_n": eval_stats.get("close_game_n", 0),
         "per_outcome": eval_stats.get("per_outcome", {}),
         "model_version": f"8 seasons (2017-2025, no COVID), XGBoost + Optuna + Pi-ratings, retrained {datetime.date.today()}",
         "walk_forward_accuracy": round(wf_stats["accuracy"], 4),
