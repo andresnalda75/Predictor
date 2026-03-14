@@ -134,11 +134,11 @@
     letter-spacing:.1em;text-transform:uppercase;color:var(--epl);
     background:var(--epl);color:white;padding:.35rem .75rem;border-radius:6px;
     margin-bottom:.5rem;display:inline-block;}
-  .fixture-row{display:flex;align-items:center;padding:.4rem .5rem;
-    border:1px solid var(--border);border-radius:8px;margin-bottom:.35rem;
-    background:white;gap:.6rem;}
+  .fixture-row{display:flex;align-items:center;padding:.3rem .4rem;
+    border:1px solid var(--border);border-radius:8px;margin-bottom:.3rem;
+    background:white;gap:.5rem;}
   .fixture-row:hover{box-shadow:0 2px 8px rgba(0,0,0,.08);}
-  .fixture-date{font-size:.68rem;color:var(--muted);width:70px;flex-shrink:0;}
+  .fixture-date{font-size:.68rem;color:var(--muted);width:52px;flex-shrink:0;}
   .fixture-teams{flex:1;min-width:0;display:flex;flex-direction:column;gap:.15rem;font-weight:600;font-size:.78rem;}
   .fixture-team-line{display:flex;align-items:center;white-space:nowrap;overflow:hidden;}
   .fixture-team-name{overflow:hidden;text-overflow:ellipsis;}
@@ -228,9 +228,11 @@
   @media(max-width:500px){.hero-stats{grid-template-columns:1fr 1fr;}
     .hero-stats .hero-stat:last-child{grid-column:span 2;}}
   @media(max-width:700px){
-    .fixture-row{padding:.35rem .5rem;gap:.4rem;margin-bottom:.25rem;border-radius:6px;}
+    main{padding-left:8px;padding-right:8px;}
+    #fixtures .card{padding:.75rem .5rem;}
+    .fixture-row{padding:.25rem .35rem;gap:.35rem;margin-bottom:.2rem;border-radius:6px;}
     .fixture-date{width:auto;}
-    .fixture-pred{font-size:.7rem;padding:.15rem .45rem;}
+    .fixture-pred{font-size:.7rem;padding:.15rem .4rem;min-width:3.8rem;}
     .matchday-block{margin-bottom:.75rem;}
     .matchday-title{font-size:.7rem;padding:.25rem .6rem;margin-bottom:.35rem;}
     .team-crest{width:14px;height:14px;}
@@ -883,13 +885,16 @@ function renderFixtures(mode){
       const predLabel = f.prediction==='H' ? _ab(f.home) : f.prediction==='A' ? _ab(f.away) : 'DRW';
       const homeCrest = f.home_crest ? `<img src="${f.home_crest}" class="team-crest">` : '';
       const awayCrest = f.away_crest ? `<img src="${f.away_crest}" class="team-crest">` : '';
+      const [yr,mo,dy] = f.date.split('-');
+      const shortDate = `${dy}/${mo}/${yr.slice(2)}`;
+      const conf1 = parseFloat(f.confidence).toFixed(1);
       html += `<div class="fixture-row">
-        <div class="fixture-date">${f.date}</div>
+        <div class="fixture-date">${shortDate}</div>
         <div class="fixture-teams">
           <div class="fixture-team-line">${homeCrest}<span class="ha-label">H</span><span class="fixture-team-name">${f.home}</span>${formDots(f.home_form)}</div>
           <div class="fixture-team-line">${awayCrest}<span class="ha-label">A</span><span class="fixture-team-name">${f.away}</span>${formDots(f.away_form)}</div>
         </div>
-        <div class="fixture-pred ${f.prediction}">${predLabel} <span class="fixture-conf-inline">${f.confidence}%</span></div>
+        <div class="fixture-pred ${f.prediction}">${predLabel} <span class="fixture-conf-inline">${conf1}%</span></div>
         <div class="fixture-probs">
           <span>H ${p.H}%</span>
           <span>D ${p.D}%</span>
