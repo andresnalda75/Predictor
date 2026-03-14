@@ -29,6 +29,8 @@ with open(os.path.join(BASE, "models/xgb_champion.pkl"), "rb") as f:
 
 with open(os.path.join(BASE, "models/cols_champion.pkl"), "rb") as f:
     CHAMPION_COLS = pickle.load(f)
+    # Pi-rating features (pi_home, pi_away, pi_diff) are in feat_dict;
+    # they'll be picked up by CHAMPION_COLS after model retrain updates cols_champion.pkl
 
 with open(os.path.join(BASE, "models/xgb_halftime.pkl"), "rb") as f:
     xgb_halftime = pickle.load(f)
@@ -42,6 +44,17 @@ with open(os.path.join(BASE, "models/label_encoder.pkl"), "rb") as f:
 # Load data
 hist_df = pd.read_csv(os.path.join(BASE, "data/hist_matches.csv"), parse_dates=["date"])
 hist_feat = pd.read_csv(os.path.join(BASE, "data/hist_features.csv"))
+
+# Load Pi-ratings (team-level final ratings for live prediction)
+pi_team_path = os.path.join(BASE, "data/pi_team_ratings.csv")
+if os.path.exists(pi_team_path):
+    _pi_df = pd.read_csv(pi_team_path)
+    pi_team_ratings = {r["team"]: {"R_h": r["pi_r_h"], "R_a": r["pi_r_a"], "overall": r["pi_overall"]}
+                       for _, r in _pi_df.iterrows()}
+    print(f"✅ Pi-ratings loaded for {len(pi_team_ratings)} teams")
+else:
+    pi_team_ratings = {}
+    print("⚠️ Pi-ratings not found — run scripts/calculate_pi_ratings.py")
 
 # Build test set
 hist_model = hist_feat[hist_feat["home_form_pts"]+hist_feat["away_form_pts"]>0].copy()
@@ -116,6 +129,20 @@ def get_standing(team):
         return s["position"], s["points"], s["gd"]
     return 10, 0, 0
 
+def get_form_list(team, n=5):
+    tm = live_df[((live_df["home_team"]==team)|(live_df["away_team"]==team))]
+    tm = tm.dropna(subset=["result"]).tail(n)
+    out = []
+    for _, r in tm.iterrows():
+        ih = r["home_team"] == team
+        if (ih and r["result"] == "H") or (not ih and r["result"] == "A"):
+            out.append("W")
+        elif r["result"] == "D":
+            out.append("D")
+        else:
+            out.append("L")
+    return out  # oldest → newest
+
 def get_rolling_shots(team, n=5):
     all_tm = live_df[((live_df["home_team"]==team)|(live_df["away_team"]==team))]
     # skip current-season rows where shot data is unavailable (zeros from API)
@@ -130,6 +157,13 @@ def get_rolling_shots(team, n=5):
         sota += r["ast"] if ih else r["hst"]
     n2=len(tm)
     return sh/n2, sha/n2, sot/n2, sota/n2
+
+def get_pi_rating(team):
+    """Return (R_h, R_a, overall) Pi-rating for a team. Defaults to 0.0."""
+    r = pi_team_ratings.get(team)
+    if r:
+        return r["R_h"], r["R_a"], r["overall"]
+    return 0.0, 0.0, 0.0
 
 @app.route("/")
 def index():
@@ -244,6 +278,10 @@ def api_predict():
     elo_away = hist_df[hist_df["away_team"]==away]["elo_away"].iloc[-1] if len(hist_df[hist_df["away_team"]==away]) else 1500
     elo_diff = elo_home - elo_away
 
+    # Pi-ratings
+    h_pi_rh, h_pi_ra, _ = get_pi_rating(home)
+    a_pi_rh, a_pi_ra, _ = get_pi_rating(away)
+
     feat_dict = {
         "home_form_pts":h_pts,"home_form_gf":h_gf,"home_form_ga":h_ga,
         "home_form_gd":h_gf-h_ga,"home_form_wins":h_wins,"home_form_draws":h_draws,
@@ -258,6 +296,7 @@ def api_predict():
         "home_league_gd":h_lgd,"away_league_gd":a_lgd,
         "matchday":30,
         "elo_home":elo_home,"elo_away":elo_away,"elo_diff":elo_diff,
+        "pi_home":h_pi_rh,"pi_away":a_pi_ra,"pi_diff":h_pi_rh-a_pi_ra,
         "home_shots_avg":h_sh,"home_shots_against_avg":h_sha,
         "home_sot_avg":h_sot,"home_sot_against_avg":h_sota,
         "away_shots_avg":a_sh,"away_shots_against_avg":a_sha,
@@ -353,6 +392,10 @@ def api_predict_fixtures():
             elo_away = hist_rows["elo_away"].iloc[-1] if len(hist_rows) else 1500
             elo_diff = elo_home - elo_away
 
+            # Pi-ratings
+            h_pi_rh, h_pi_ra, _ = get_pi_rating(home)
+            a_pi_rh, a_pi_ra, _ = get_pi_rating(away)
+
             feat_dict = {
                 "home_form_pts":h_pts,"home_form_gf":h_gf,"home_form_ga":h_ga,
                 "home_form_gd":h_gf-h_ga,"home_form_wins":h_wins,"home_form_draws":h_draws,
@@ -367,6 +410,7 @@ def api_predict_fixtures():
                 "home_league_gd":h_lgd,"away_league_gd":a_lgd,
                 "matchday":fix["matchday"],
                 "elo_home":elo_home,"elo_away":elo_away,"elo_diff":elo_diff,
+                "pi_home":h_pi_rh,"pi_away":a_pi_ra,"pi_diff":h_pi_rh-a_pi_ra,
                 "home_shots_avg":h_sh,"home_shots_against_avg":h_sha,
                 "home_sot_avg":h_sot,"home_sot_against_avg":h_sota,
                 "away_shots_avg":a_sh,"away_shots_against_avg":a_sha,
@@ -392,6 +436,8 @@ def api_predict_fixtures():
                 "away_position": a_pos,
                 "home_crest": fix.get("home_crest", ""),
                 "away_crest": fix.get("away_crest", ""),
+                "home_form": get_form_list(home),
+                "away_form": get_form_list(away),
             })
         except Exception as e:
             results.append({

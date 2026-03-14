@@ -149,6 +149,11 @@
   .seg-btn{padding:.35rem .9rem;border-radius:99px;border:1px solid var(--border);
     background:white;font-family:'DM Sans',sans-serif;font-size:.82rem;cursor:pointer;transition:all .15s;}
   .seg-btn.active{background:var(--epl);color:white;border-color:var(--epl);}
+  .form-dots{display:inline-flex;gap:3px;align-items:center;vertical-align:middle;margin:0 5px;}
+  .form-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+  .form-dot.W{background:var(--green);}
+  .form-dot.D{background:var(--amber);}
+  .form-dot.L{background:var(--red,#ff1744);}
 </style>
 </head>
 <body>
@@ -648,6 +653,11 @@ function filterFixtures(mode, btn){
   renderFixtures(mode);
 }
 
+function formDots(form){
+  if(!form||!form.length) return '';
+  return `<span class="form-dots">${form.map(r=>`<span class="form-dot ${r}" title="${r}"></span>`).join('')}</span>`;
+}
+
 function renderFixtures(mode){
   const data = window._fixturesData || [];
   const container = document.getElementById('fixtures-container');
@@ -672,9 +682,9 @@ function renderFixtures(mode){
       html += `<div class="fixture-row">
         <div class="fixture-date">${f.date}</div>
         <div class="fixture-teams">
-          ${homeCrest}<span class="ha-label">H</span>${f.home}
+          ${homeCrest}<span class="ha-label">H</span>${f.home}${formDots(f.home_form)}
           <span class="vs-sep">vs</span>
-          ${awayCrest}<span class="ha-label">A</span>${f.away}
+          ${formDots(f.away_form)}${awayCrest}<span class="ha-label">A</span>${f.away}
         </div>
         <div class="fixture-pred ${f.prediction}">${predLabel}</div>
         <div class="fixture-conf ${confClass}">${f.confidence}%</div>
