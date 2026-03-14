@@ -1,0 +1,44 @@
+{
+  "description": "Model performance tracking over time. Each entry represents an evaluation snapshot. Run benchmarks/compare.py --update-results to populate RPS and walk-forward fields.",
+
+  "academic_benchmarks": [
+    {
+      "model": "Bookmaker implied odds",
+      "accuracy": 0.65,
+      "notes": "Market consensus — effectively the ceiling for EPL 3-outcome prediction"
+    },
+    {
+      "model": "LightGBM (xG + advanced features)",
+      "accuracy": 0.67,
+      "notes": "Academic upper bound; uses post-match xG and proprietary features not available pre-match"
+    },
+    {
+      "model": "CatBoost + Pi-ratings",
+      "accuracy": 0.558,
+      "notes": "Hvattum & Arntzen-style Pi-rating extension; comparable setup to ours, realistic pre-match ceiling"
+    },
+    {
+      "model": "Random baseline (3-outcome)",
+      "accuracy": 0.333,
+      "notes": "Uniform prior across H/D/A"
+    }
+  ],
+
+  "entries": [
+    {
+      "date": "2026-03",
+      "model_version": "XGBoost + Optuna, 8 seasons 2017-2025 (no COVID)",
+      "pre_match_accuracy": 0.556,
+      "halftime_accuracy": 0.622,
+      "test_matches": 532,
+      "draw_recall": 0.0079,
+      "high_conf_accuracy": 0.6522,
+      "high_conf_n": 230,
+      "rps": null,
+      "walk_forward_accuracy": null,
+      "walk_forward_rps": null,
+      "walk_forward_draw_recall": null,
+      "notes": "Baseline. 80/20 chronological split. Run compare.py --update-results in Colab to fill RPS fields."
+    }
+  ]
+}
