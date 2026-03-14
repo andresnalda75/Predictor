@@ -298,7 +298,7 @@ def api_predict():
     feat_dict = {
         "home_form_pts":h_pts,"home_form_gf":h_gf,"home_form_ga":h_ga,
         "home_form_gd":h_gf-h_ga,"home_form_wins":h_wins,"home_form_draws":h_draws,
-        "away_form_pts":a_pts,"away_form_gf":a_gf,"away_form_ga":a_gf,
+        "away_form_pts":a_pts,"away_form_gf":a_gf,"away_form_ga":a_ga,
         "away_form_gd":a_gf-a_ga,"away_form_wins":a_wins,"away_form_draws":a_draws,
         "home_home_pts":hh_pts,"home_home_gd":hh_gf-hh_ga,
         "away_away_pts":aa_pts,"away_away_gd":aa_gf-aa_ga,
