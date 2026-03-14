@@ -23,7 +23,7 @@ except Exception as e:
 
 BASE = os.path.dirname(os.path.abspath(__file__)) if "__file__" in dir() else "/content/epl_dashboard"
 
-# Load champion model (8 seasons, no COVID, XGBoost + Optuna)
+# Load champion model (8 seasons, no COVID, XGBoost + Optuna, 36 features incl. Pi-ratings)
 with open(os.path.join(BASE, "models/xgb_champion.pkl"), "rb") as f:
     xgb_champion = pickle.load(f)
 
