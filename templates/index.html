@@ -359,6 +359,7 @@ function showTab(name,btn){
   if(name==='overview') loadOverview();
   if(name==='validation') loadValidation();
   if(name==='teams') loadTeams();
+  if(name==='fixtures' && !window._fixturesData) loadFixtures();
   if(name==='confidence') loadConfidence();
 }
 
@@ -607,6 +608,66 @@ async function runHalfTime(){
 }
 
 loadOverview();
+</script>
+
+<script>
+async function loadFixtures(){
+  const res = await fetch('/api/predict_fixtures');
+  const data = await res.json();
+  if(data.error){
+    document.getElementById('fixtures-container').innerHTML = '<div class="loading">Error: '+data.error+'</div>';
+    return;
+  }
+  window._fixturesData = data;
+  renderFixtures('all');
+}
+
+function filterFixtures(mode, btn){
+  document.querySelectorAll('.fixtures-filter .seg-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderFixtures(mode);
+}
+
+function renderFixtures(mode){
+  const data = window._fixturesData || [];
+  const container = document.getElementById('fixtures-container');
+  const byMD = {};
+  data.forEach(f => {
+    if(!byMD[f.matchday]) byMD[f.matchday] = [];
+    byMD[f.matchday].push(f);
+  });
+  const matchdays = Object.keys(byMD).map(Number).sort((a,b)=>a-b);
+  const toShow = mode === 'next' ? matchdays.slice(0,1) : matchdays;
+  let html = '';
+  toShow.forEach(md => {
+    html += `<div class="matchday-block"><div class="matchday-title">Matchday ${md}</div>`;
+    byMD[md].forEach(f => {
+      if(f.error){
+        html += `<div class="fixture-row">
+          <div class="fixture-date">${f.date}</div>
+          <div class="fixture-teams">${f.home} <span>vs</span> ${f.away}</div>
+          <div class="fixture-conf" style="color:red">No data</div>
+        </div>`;
+        return;
+      }
+      const p = f.probabilities;
+      const predLabel = f.prediction==='H' ? f.home : f.prediction==='A' ? f.away : 'Draw';
+      html += `<div class="fixture-row">
+        <div class="fixture-date">${f.date}</div>
+        <div class="fixture-teams">${f.home} <span>vs</span> ${f.away}</div>
+        <div class="fixture-pred ${f.prediction}">${predLabel}</div>
+        <div class="fixture-conf">${f.confidence}% conf</div>
+        <div class="fixture-probs">
+          <span>H ${p.H}%</span>
+          <span>D ${p.D}%</span>
+          <span>A ${p.A}%</span>
+        </div>
+      </div>`;
+    });
+    html += '</div>';
+  });
+  container.innerHTML = html || '<div class="loading">No upcoming fixtures found.</div>';
+}
 </script>
 </body>
 </html>
