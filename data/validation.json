@@ -34,7 +34,7 @@
       "support": 372.0
     }
   },
-  "model_version": "8 seasons (2017-2025, no COVID), XGBoost + Optuna + Pi-ratings + B365 odds, 47 features, retrained 2026-03-14",
+  "model_version": "8 seasons (2017-2025, no COVID), XGBoost + Optuna + Pi-ratings, retrained 2026-03-14",
   "walk_forward_accuracy": 0.5638,
   "walk_forward_rps": 0.1944,
   "walk_forward_draw_recall": 0.0311,
