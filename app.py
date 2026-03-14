@@ -114,6 +114,15 @@ def get_rolling_shots(team, n=5):
 def index():
     return render_template("index.html", teams=ALL_TEAMS)
 
+@app.route("/api/current_teams")
+def api_current_teams():
+    if standings_cache:
+        return jsonify(sorted(standings_cache.keys()))
+    if live_season is not None and len(live_season) > 0:
+        teams = sorted(set(live_season["home_team"].tolist() + live_season["away_team"].tolist()))
+        return jsonify(teams)
+    return jsonify(ALL_TEAMS)
+
 @app.route("/api/overview")
 def api_overview():
     acc = round(test_df["correct"].mean()*100,1)

@@ -219,9 +219,9 @@
     <div class="card">
       <div class="card-title">Head to Head Record</div>
       <div class="h2h-selects">
-        <select id="h2h-home"><option value="">— Home Team —</option>{% for t in teams %}<option>{{ t }}</option>{% endfor %}</select>
+        <select id="h2h-home"><option value="">— Home Team —</option></select>
         <span class="vs-badge">VS</span>
-        <select id="h2h-away"><option value="">— Away Team —</option>{% for t in teams %}<option>{{ t }}</option>{% endfor %}</select>
+        <select id="h2h-away"><option value="">— Away Team —</option></select>
         <button class="btn-search" onclick="loadH2H()">Search</button>
       </div>
       <div id="h2h-result"></div>
@@ -231,9 +231,9 @@
     <div class="card" style="margin-bottom:1rem">
       <div class="card-title">Predict a Match</div>
       <div class="predict-form">
-        <select id="pred-home"><option value="">— Home Team —</option>{% for t in teams %}<option>{{ t }}</option>{% endfor %}</select>
+        <select id="pred-home"><option value="">— Home Team —</option></select>
         <span class="vs-badge">VS</span>
-        <select id="pred-away"><option value="">— Away Team —</option>{% for t in teams %}<option>{{ t }}</option>{% endfor %}</select>
+        <select id="pred-away"><option value="">— Away Team —</option></select>
         <button class="btn-search" onclick="runPredict()">Predict</button>
       </div>
       <div id="predict-result"></div>
@@ -254,9 +254,9 @@
         Enter the teams and half time score to predict the final result using the in-game model (<span id="about-ht-acc">…</span> accuracy)
       </p>
       <div class="predict-form">
-        <select id="ht-home"><option value="">— Home Team —</option>{% for t in teams %}<option>{{ t }}</option>{% endfor %}</select>
+        <select id="ht-home"><option value="">— Home Team —</option></select>
         <span class="vs-badge">VS</span>
-        <select id="ht-away"><option value="">— Away Team —</option>{% for t in teams %}<option>{{ t }}</option>{% endfor %}</select>
+        <select id="ht-away"><option value="">— Away Team —</option></select>
       </div>
       <div style="display:flex;gap:1rem;align-items:center;margin-bottom:1.5rem;flex-wrap:wrap">
         <span style="font-weight:600;font-size:.9rem">Half Time Score:</span>
@@ -605,6 +605,17 @@ async function runHalfTime(){
     </div>`;
 }
 
+async function populateTeamDropdowns(){
+  const teams = await fetch('/api/current_teams').then(r=>r.json());
+  const ids = ['h2h-home','h2h-away','pred-home','pred-away','ht-home','ht-away'];
+  const opts = teams.map(t=>`<option value="${t}">${t}</option>`).join('');
+  ids.forEach(id=>{
+    const sel = document.getElementById(id);
+    sel.innerHTML = sel.options[0].outerHTML + opts;
+  });
+}
+
+populateTeamDropdowns();
 loadOverview();
 </script>
 
