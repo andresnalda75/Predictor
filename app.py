@@ -9,7 +9,7 @@ app = Flask(__name__)
 
 import threading, time, os
 os.environ["FOOTBALL_DATA_API_KEY"] = "3966f7fa5a62439e9a84c5ddbc41dae0"  # will use Railway env var in production
-from live_data import fetch_current_season, fetch_standings, fetch_upcoming
+from live_data import fetch_current_season, fetch_standings, fetch_upcoming, CREST_MAP
 
 # Load live season data
 try:
@@ -139,11 +139,12 @@ CURRENT_SEASON_TEAMS = sorted([
 @app.route("/api/current_teams")
 def api_current_teams():
     if standings_cache:
-        return jsonify(sorted(standings_cache.keys()))
-    if live_season is not None and len(live_season) > 0:
-        teams = sorted(set(live_season["home_team"].tolist() + live_season["away_team"].tolist()))
-        return jsonify(teams)
-    return jsonify(CURRENT_SEASON_TEAMS)
+        names = sorted(standings_cache.keys())
+    elif live_season is not None and len(live_season) > 0:
+        names = sorted(set(live_season["home_team"].tolist() + live_season["away_team"].tolist()))
+    else:
+        names = CURRENT_SEASON_TEAMS
+    return jsonify([{"name": t, "crest": CREST_MAP.get(t, "")} for t in names])
 
 @app.route("/api/overview")
 def api_overview():

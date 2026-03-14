@@ -469,9 +469,13 @@ async function runPredict(){
   const p=d.probabilities;
   document.getElementById('predict-result').innerHTML=`
     <div class="predict-result show">
-      <div class="predict-matchup">${d.home} vs ${d.away}</div>
+      <div style="display:flex;align-items:center;justify-content:center;gap:1rem;margin-bottom:.5rem;flex-wrap:wrap">
+        <div style="display:flex;align-items:center;gap:.5rem">${crestImg(d.home,40)}<span style="font-weight:700">${d.home}</span></div>
+        <span style="opacity:.5;font-size:.9rem">vs</span>
+        <div style="display:flex;align-items:center;gap:.5rem"><span style="font-weight:700">${d.away}</span>${crestImg(d.away,40)}</div>
+      </div>
       <div class="predict-outcome">${outcomes[d.prediction]}</div>
-      <div class="predict-label">${d.home} (#${d.home_position}) · ${d.away} (#${d.away_position})</div>
+      <div class="predict-label">#${d.home_position} · #${d.away_position}</div>
       <div class="proba-bars">
         ${Object.entries(p).map(([k,v])=>`
           <div class="proba-item">
@@ -605,14 +609,21 @@ async function runHalfTime(){
     </div>`;
 }
 
+let teamCrests = {};
 async function populateTeamDropdowns(){
   const teams = await fetch('/api/current_teams').then(r=>r.json());
+  teams.forEach(t=>{ teamCrests[t.name] = t.crest; });
   const ids = ['h2h-home','h2h-away','pred-home','pred-away','ht-home','ht-away'];
-  const opts = teams.map(t=>`<option value="${t}">${t}</option>`).join('');
+  const opts = teams.map(t=>`<option value="${t.name}">${t.name}</option>`).join('');
   ids.forEach(id=>{
     const sel = document.getElementById(id);
     sel.innerHTML = sel.options[0].outerHTML + opts;
   });
+}
+
+function crestImg(team, size=32){
+  const src = teamCrests[team];
+  return src ? `<img src="${src}" style="width:${size}px;height:${size}px;object-fit:contain;vertical-align:middle">` : '';
 }
 
 populateTeamDropdowns();
