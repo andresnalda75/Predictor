@@ -51,7 +51,7 @@
     .nav-tabs{display:none;}
     .hamburger{display:flex;}
   }
-  main{max-width:1200px;margin:0 auto;padding:2rem 1.5rem 4.5rem;}
+  main{max-width:1200px;margin:0 auto;padding:1rem 1.5rem 4.5rem;}
   .section{display:none;}.section.active{display:block;}
   .card{background:var(--card);border:1px solid var(--border);border-radius:12px;
     padding:1.5rem;box-shadow:0 1px 4px rgba(0,0,0,.06);margin-bottom:1rem;}
@@ -129,11 +129,11 @@
   .conf-acc.good{color:var(--green);}.conf-acc.ok{color:var(--amber);}.conf-acc.poor{color:var(--red);}
   .conf-sub{font-size:.78rem;color:var(--muted);margin-top:.25rem;}
   .loading{text-align:center;padding:3rem;color:var(--muted);font-size:.9rem;}
-  .matchday-block{margin-bottom:.75rem;}
-  .matchday-title{font-family:'Archivo Black',sans-serif;font-size:.75rem;
+  .matchday-block{margin-bottom:.5rem;}
+  .matchday-title{font-family:'Archivo Black',sans-serif;font-size:.68rem;
     letter-spacing:.1em;text-transform:uppercase;color:var(--epl);
-    background:var(--epl);color:white;padding:.25rem .6rem;border-radius:6px;
-    margin-bottom:.3rem;display:inline-block;}
+    background:var(--epl);color:white;padding:.15rem .5rem;border-radius:6px;
+    margin-bottom:.2rem;display:inline-block;}
   .fixture-row{display:flex;align-items:center;padding:.3rem .5rem;
     border:1px solid var(--border);border-radius:8px;margin-bottom:.3rem;
     background:white;gap:.4rem;}
@@ -153,7 +153,10 @@
   .fixture-probs{display:flex;gap:.4rem;font-size:.72rem;flex-shrink:0;}
   .fixture-probs span{padding:.1rem .4rem;border-radius:99px;background:#f3f4f6;}
   @media(max-width:700px){.fixture-probs{display:none;}}
-  .fixtures-filter{display:flex;gap:.5rem;margin-bottom:.75rem;flex-wrap:wrap;}
+  #fixtures .card{padding:.75rem .75rem;}
+  #fixtures .card-title{font-size:.72rem;margin-bottom:.3rem;}
+  .fixtures-filter{display:flex;gap:.4rem;margin-bottom:.3rem;flex-wrap:wrap;}
+  .fixtures-filter .seg-btn{padding:.25rem .7rem;font-size:.78rem;}
   .team-crest{width:16px;height:16px;object-fit:contain;vertical-align:middle;margin-right:3px;}
   .ha-label{font-size:.62rem;font-weight:700;color:var(--muted);margin-right:2px;vertical-align:middle;width:14px;flex-shrink:0;text-align:center;}
   .seg-toggle{display:flex;gap:.5rem;margin-bottom:1rem;flex-wrap:wrap;}
