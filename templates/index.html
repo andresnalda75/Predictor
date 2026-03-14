@@ -122,6 +122,12 @@
   .fixture-probs{display:flex;gap:.5rem;font-size:.78rem;flex-shrink:0;}
   .fixture-probs span{padding:.15rem .5rem;border-radius:99px;background:#f3f4f6;}
   .fixtures-filter{display:flex;gap:.5rem;margin-bottom:1.5rem;flex-wrap:wrap;}
+  .team-crest{width:22px;height:22px;object-fit:contain;vertical-align:middle;margin-right:4px;}
+  .ha-label{font-size:.68rem;font-weight:700;color:var(--muted);margin-right:3px;vertical-align:middle;}
+  .vs-sep{color:var(--muted);margin:0 .5rem;font-weight:400;}
+  .fixture-conf.good{color:var(--green);font-weight:700;}
+  .fixture-conf.ok{color:var(--amber);font-weight:700;}
+  .fixture-conf.poor{color:var(--muted);}
   .seg-toggle{display:flex;gap:.5rem;margin-bottom:1rem;flex-wrap:wrap;}
   .seg-btn{padding:.35rem .9rem;border-radius:99px;border:1px solid var(--border);
     background:white;font-family:'DM Sans',sans-serif;font-size:.82rem;cursor:pointer;transition:all .15s;}
@@ -640,23 +646,24 @@ function renderFixtures(mode){
   const toShow = mode === 'next' ? matchdays.slice(0,1) : matchdays;
   let html = '';
   toShow.forEach(md => {
+    // Sort by confidence descending
+    const games = byMD[md].filter(f=>!f.error).sort((a,b)=>b.confidence-a.confidence);
     html += `<div class="matchday-block"><div class="matchday-title">Matchday ${md}</div>`;
-    byMD[md].forEach(f => {
-      if(f.error){
-        html += `<div class="fixture-row">
-          <div class="fixture-date">${f.date}</div>
-          <div class="fixture-teams">${f.home} <span>vs</span> ${f.away}</div>
-          <div class="fixture-conf" style="color:red">No data</div>
-        </div>`;
-        return;
-      }
+    games.forEach(f => {
       const p = f.probabilities;
       const predLabel = f.prediction==='H' ? f.home : f.prediction==='A' ? f.away : 'Draw';
+      const homeCrest = f.home_crest ? `<img src="${f.home_crest}" class="team-crest">` : '';
+      const awayCrest = f.away_crest ? `<img src="${f.away_crest}" class="team-crest">` : '';
+      const confClass = f.confidence >= 60 ? 'good' : f.confidence >= 50 ? 'ok' : 'poor';
       html += `<div class="fixture-row">
         <div class="fixture-date">${f.date}</div>
-        <div class="fixture-teams">${f.home} <span>vs</span> ${f.away}</div>
+        <div class="fixture-teams">
+          ${homeCrest}<span class="ha-label">H</span>${f.home}
+          <span class="vs-sep">vs</span>
+          ${awayCrest}<span class="ha-label">A</span>${f.away}
+        </div>
         <div class="fixture-pred ${f.prediction}">${predLabel}</div>
-        <div class="fixture-conf">${f.confidence}% conf</div>
+        <div class="fixture-conf ${confClass}">${f.confidence}%</div>
         <div class="fixture-probs">
           <span>H ${p.H}%</span>
           <span>D ${p.D}%</span>

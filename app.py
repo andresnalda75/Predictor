@@ -341,15 +341,17 @@ def api_predict_fixtures():
             probas = {l:round(float(p)*100,1) for l,p in zip(labels,proba)}
 
             results.append({
-                "matchday":  fix["matchday"],
-                "date":      fix["date"],
-                "home":      home,
-                "away":      away,
+                "matchday":   fix["matchday"],
+                "date":       fix["date"],
+                "home":       home,
+                "away":       away,
                 "prediction": pred,
                 "probabilities": probas,
                 "confidence": round(max(probas.values()), 1),
                 "home_position": h_pos,
                 "away_position": a_pos,
+                "home_crest": fix.get("home_crest", ""),
+                "away_crest": fix.get("away_crest", ""),
             })
         except Exception as e:
             results.append({

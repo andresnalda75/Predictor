@@ -30,6 +30,30 @@ TEAM_MAP = {
     "Wolverhampton Wanderers FC":  "Wolves",
 }
 
+
+CREST_MAP = {
+    "Arsenal":        "https://crests.football-data.org/57.png",
+    "Aston Villa":    "https://crests.football-data.org/58.png",
+    "Bournemouth":    "https://crests.football-data.org/1044.png",
+    "Brentford":      "https://crests.football-data.org/402.png",
+    "Brighton":       "https://crests.football-data.org/397.png",
+    "Burnley":        "https://crests.football-data.org/328.png",
+    "Chelsea":        "https://crests.football-data.org/61.png",
+    "Crystal Palace": "https://crests.football-data.org/354.png",
+    "Everton":        "https://crests.football-data.org/62.png",
+    "Fulham":         "https://crests.football-data.org/63.png",
+    "Leeds United":   "https://crests.football-data.org/341.png",
+    "Liverpool":      "https://crests.football-data.org/64.png",
+    "Man City":       "https://crests.football-data.org/65.png",
+    "Man United":     "https://crests.football-data.org/66.png",
+    "Newcastle":      "https://crests.football-data.org/67.png",
+    "Nott'm Forest": "https://crests.football-data.org/351.png",
+    "Sunderland":     "https://crests.football-data.org/71.png",
+    "Tottenham":      "https://crests.football-data.org/73.png",
+    "West Ham":       "https://crests.football-data.org/563.png",
+    "Wolves":         "https://crests.football-data.org/76.png",
+}
+
 def fetch_current_season():
     r = requests.get(
         f"{BASE_URL}/competitions/PL/matches",
@@ -82,12 +106,16 @@ def fetch_upcoming():
         timeout=15
     )
     r.raise_for_status()
-    return [
-        {
-            "date":      m["utcDate"][:10],
-            "home_team": TEAM_MAP.get(m["homeTeam"]["name"], m["homeTeam"]["name"]),
-            "away_team": TEAM_MAP.get(m["awayTeam"]["name"], m["awayTeam"]["name"]),
-            "matchday":  m["matchday"],
-        }
-        for m in r.json()["matches"]
-    ]
+    fixtures = []
+    for m in r.json()["matches"]:
+        home = TEAM_MAP.get(m["homeTeam"]["name"], m["homeTeam"]["name"])
+        away = TEAM_MAP.get(m["awayTeam"]["name"], m["awayTeam"]["name"])
+        fixtures.append({
+            "date":       m["utcDate"][:10],
+            "home_team":  home,
+            "away_team":  away,
+            "matchday":   m["matchday"],
+            "home_crest": CREST_MAP.get(home, ""),
+            "away_crest": CREST_MAP.get(away, ""),
+        })
+    return fixtures
