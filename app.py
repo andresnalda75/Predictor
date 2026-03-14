@@ -178,6 +178,47 @@ def get_pi_rating(team):
         return r["R_h"], r["R_a"], r["overall"]
     return 0.0, 0.0, 0.0
 
+def get_days_rest(team):
+    """Days since the team's most recent match in live_df."""
+    tm = live_df[((live_df["home_team"]==team)|(live_df["away_team"]==team))]
+    if len(tm) == 0:
+        return 7
+    last_date = tm.iloc[-1]["date"]
+    return max((pd.Timestamp.now() - last_date).days, 0)
+
+def get_momentum(team, n=5):
+    """Form momentum: PPG in last n matches minus PPG in prior n matches.
+    Positive = rising, negative = falling."""
+    tm = live_df[((live_df["home_team"]==team)|(live_df["away_team"]==team))]
+    if len(tm) < 2:
+        return 0.0
+    recent = tm.tail(n)
+    older  = tm.iloc[max(0, len(tm)-2*n):max(0, len(tm)-n)]
+    def _ppg(matches):
+        if len(matches) == 0: return 0.0
+        pts = 0
+        for _, r in matches.iterrows():
+            ih = r["home_team"] == team
+            if (ih and r["result"]=="H") or (not ih and r["result"]=="A"): pts += 3
+            elif r["result"]=="D": pts += 1
+        return pts / len(matches)
+    return _ppg(recent) - _ppg(older)
+
+def get_h2h_record(home, away, n=10):
+    """H2H record from last n meetings (either venue). Returns (home_wins, draws, away_wins)."""
+    matches = live_df[
+        ((live_df["home_team"]==home)&(live_df["away_team"]==away))|
+        ((live_df["home_team"]==away)&(live_df["away_team"]==home))
+    ].sort_values("date", ascending=False).head(n)
+    if len(matches) == 0:
+        return 0, 0, 0
+    h_wins = int(((matches["home_team"]==home)&(matches["result"]=="H")).sum()+
+                 ((matches["away_team"]==home)&(matches["result"]=="A")).sum())
+    a_wins = int(((matches["home_team"]==away)&(matches["result"]=="H")).sum()+
+                 ((matches["away_team"]==away)&(matches["result"]=="A")).sum())
+    draws  = int((matches["result"]=="D").sum())
+    return h_wins, draws, a_wins
+
 @app.route("/")
 def index():
     return render_template("index.html", teams=ALL_TEAMS)
@@ -295,6 +336,9 @@ def api_predict():
     h_pi_rh, h_pi_ra, _ = get_pi_rating(home)
     a_pi_rh, a_pi_ra, _ = get_pi_rating(away)
 
+    # H2H record
+    h2h_hw, h2h_d, h2h_aw = get_h2h_record(home, away)
+
     feat_dict = {
         "home_form_pts":h_pts,"home_form_gf":h_gf,"home_form_ga":h_ga,
         "home_form_gd":h_gf-h_ga,"home_form_wins":h_wins,"home_form_draws":h_draws,
@@ -310,6 +354,9 @@ def api_predict():
         "matchday":30,
         "elo_home":elo_home,"elo_away":elo_away,"elo_diff":elo_diff,
         "pi_home":h_pi_rh,"pi_away":a_pi_ra,"pi_diff":h_pi_rh-a_pi_ra,
+        "home_days_rest":get_days_rest(home),"away_days_rest":get_days_rest(away),
+        "home_momentum":get_momentum(home),"away_momentum":get_momentum(away),
+        "h2h_home_wins":h2h_hw,"h2h_draws":h2h_d,"h2h_away_wins":h2h_aw,
         "home_shots_avg":h_sh,"home_shots_against_avg":h_sha,
         "home_sot_avg":h_sot,"home_sot_against_avg":h_sota,
         "away_shots_avg":a_sh,"away_shots_against_avg":a_sha,
@@ -419,6 +466,9 @@ def api_predict_fixtures():
             h_pi_rh, h_pi_ra, _ = get_pi_rating(home)
             a_pi_rh, a_pi_ra, _ = get_pi_rating(away)
 
+            # H2H record
+            h2h_hw, h2h_d, h2h_aw = get_h2h_record(home, away)
+
             feat_dict = {
                 "home_form_pts":h_pts,"home_form_gf":h_gf,"home_form_ga":h_ga,
                 "home_form_gd":h_gf-h_ga,"home_form_wins":h_wins,"home_form_draws":h_draws,
@@ -434,6 +484,9 @@ def api_predict_fixtures():
                 "matchday":fix["matchday"],
                 "elo_home":elo_home,"elo_away":elo_away,"elo_diff":elo_diff,
                 "pi_home":h_pi_rh,"pi_away":a_pi_ra,"pi_diff":h_pi_rh-a_pi_ra,
+                "home_days_rest":get_days_rest(home),"away_days_rest":get_days_rest(away),
+                "home_momentum":get_momentum(home),"away_momentum":get_momentum(away),
+                "h2h_home_wins":h2h_hw,"h2h_draws":h2h_d,"h2h_away_wins":h2h_aw,
                 "home_shots_avg":h_sh,"home_shots_against_avg":h_sha,
                 "home_sot_avg":h_sot,"home_sot_against_avg":h_sota,
                 "away_shots_avg":a_sh,"away_shots_against_avg":a_sha,

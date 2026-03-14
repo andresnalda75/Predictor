@@ -510,9 +510,9 @@ def save_model(model, le, cols, eval_stats, wf_stats, best_params):
 
     # Update validation.json
     from scipy import stats as scipy_stats
-    p_value = scipy_stats.binom_test(
+    p_value = scipy_stats.binomtest(
         eval_stats["correct"], eval_stats["total"], 1 / 3, alternative="greater"
-    ) if eval_stats["total"] > 0 else 1.0
+    ).pvalue if eval_stats["total"] > 0 else 1.0
 
     val = {
         "accuracy": eval_stats["accuracy"],

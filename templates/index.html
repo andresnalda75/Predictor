@@ -177,6 +177,46 @@
   .standings-legend{display:flex;gap:1rem;flex-wrap:wrap;font-size:.78rem;color:var(--muted);margin-top:1rem;}
   .legend-dot{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px;vertical-align:middle;}
   .team-name-cell{display:flex;align-items:center;gap:.5rem;font-weight:600;}
+  /* Hero */
+  .hero{background:linear-gradient(135deg,var(--epl) 0%,#1a0028 100%);
+    border-radius:16px;padding:2.5rem 2rem;margin-bottom:1.5rem;
+    color:#fff;position:relative;overflow:hidden;}
+  .hero::before{content:'';position:absolute;top:-60px;right:-60px;
+    width:220px;height:220px;border-radius:50%;
+    background:rgba(0,255,133,.07);pointer-events:none;}
+  .hero::after{content:'';position:absolute;bottom:-80px;left:30%;
+    width:300px;height:300px;border-radius:50%;
+    background:rgba(0,255,133,.04);pointer-events:none;}
+  .hero-tag{display:inline-block;background:rgba(0,255,133,.15);color:var(--epl2);
+    font-size:.72rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;
+    padding:.3rem .75rem;border-radius:99px;border:1px solid rgba(0,255,133,.3);
+    margin-bottom:1rem;}
+  .hero-title{font-family:'Archivo Black',sans-serif;font-size:clamp(1.6rem,4vw,2.4rem);
+    line-height:1.15;margin-bottom:.6rem;}
+  .hero-title span{color:var(--epl2);}
+  .hero-sub{font-size:.95rem;opacity:.65;margin-bottom:2rem;max-width:520px;line-height:1.6;}
+  .hero-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;}
+  .hero-stat{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);
+    border-radius:12px;padding:1.1rem 1rem;text-align:center;}
+  .hero-stat-value{font-family:'Archivo Black',sans-serif;font-size:clamp(1.6rem,3.5vw,2.2rem);
+    color:var(--epl2);line-height:1;}
+  .hero-stat-label{font-size:.75rem;opacity:.6;margin-top:.35rem;letter-spacing:.04em;}
+  .hero-models{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem;}
+  .hero-model{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);
+    border-radius:14px;padding:1.25rem 1.25rem 1rem;}
+  .hero-model-type{font-size:.7rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;
+    opacity:.55;margin-bottom:.35rem;}
+  .hero-model-value{font-family:'Archivo Black',sans-serif;font-size:clamp(2rem,5vw,2.8rem);
+    color:var(--epl2);line-height:1;}
+  .hero-model-desc{font-size:.78rem;opacity:.5;margin-top:.35rem;line-height:1.4;}
+  .hero-model.highlight{background:rgba(0,255,133,.1);border-color:rgba(0,255,133,.35);}
+  .hero-support{display:grid;grid-template-columns:1fr 1fr;gap:.75rem;}
+  .hero-support-stat{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);
+    border-radius:10px;padding:.75rem 1rem;display:flex;align-items:center;gap:.75rem;}
+  .hero-support-value{font-family:'Archivo Black',sans-serif;font-size:1.2rem;color:var(--epl2);}
+  .hero-support-label{font-size:.75rem;opacity:.5;line-height:1.3;}
+  @media(max-width:500px){.hero-stats{grid-template-columns:1fr 1fr;}
+    .hero-stats .hero-stat:last-child{grid-column:span 2;}}
 </style>
 </head>
 <body>
@@ -210,6 +250,33 @@
 </nav>
 <main>
   <section id="overview" class="section active">
+    <div class="hero">
+      <div class="hero-tag">Premier League · 2025/26</div>
+      <div class="hero-title">EPL <span>Predictor</span></div>
+      <div class="hero-sub">ML-powered match predictions — beating the pro benchmark</div>
+      <div class="hero-models">
+        <div class="hero-model">
+          <div class="hero-model-type">Pre-Match</div>
+          <div class="hero-model-value" id="hero-acc">55.6%</div>
+          <div class="hero-model-desc">Predicted before kick-off using form, ELO &amp; standings</div>
+        </div>
+        <div class="hero-model highlight">
+          <div class="hero-model-type">In-Game</div>
+          <div class="hero-model-value" id="hero-ht-acc">62.2%</div>
+          <div class="hero-model-desc">Updated at half-time with the score — +6.6pp boost</div>
+        </div>
+      </div>
+      <div class="hero-support">
+        <div class="hero-support-stat">
+          <div class="hero-support-value">+22pp</div>
+          <div class="hero-support-label">above random<br>baseline (33.3%)</div>
+        </div>
+        <div class="hero-support-stat">
+          <div class="hero-support-value" id="hero-matches">532</div>
+          <div class="hero-support-label">test matches<br>evaluated</div>
+        </div>
+      </div>
+    </div>
     <div class="stat-grid" id="overview-stats"><div class="loading">Loading…</div></div>
     <div class="grid-2">
       <div class="card"><div class="card-title">Accuracy by Predicted Outcome</div><div id="outcome-bars"><div class="loading">Loading…</div></div></div>
@@ -460,6 +527,9 @@ async function loadOverview(){
   // Populate accuracy spans in Predict and Half Time description cards
   document.getElementById('about-pre-acc').textContent = d.pre_accuracy+'%';
   document.getElementById('about-ht-acc').textContent = d.ing_accuracy+'%';
+  document.getElementById('hero-acc').textContent = d.pre_accuracy+'%';
+  document.getElementById('hero-ht-acc').textContent = d.ing_accuracy+'%';
+  document.getElementById('hero-matches').textContent = d.total_matches.toLocaleString();
 }
 
 async function loadTeams(){
@@ -657,10 +727,14 @@ async function runHalfTime(){
   const p=d.probabilities;
   document.getElementById('ht-result').innerHTML=`
     <div class="predict-result show">
-      <div class="predict-matchup">${d.home} vs ${d.away}</div>
+      <div style="display:flex;align-items:center;justify-content:center;gap:1rem;margin-bottom:.5rem;flex-wrap:wrap">
+        <div style="display:flex;align-items:center;gap:.5rem">${crestImg(d.home,40)}<span style="font-weight:700">${d.home}</span></div>
+        <span style="opacity:.5;font-size:.9rem">vs</span>
+        <div style="display:flex;align-items:center;gap:.5rem"><span style="font-weight:700">${d.away}</span>${crestImg(d.away,40)}</div>
+      </div>
       <div style="font-size:1rem;opacity:.7;margin-bottom:.5rem">Half Time: ${d.ht_score}</div>
       <div class="predict-outcome">${outcomes[d.prediction]}</div>
-      <div class="predict-label">${d.home} (#${d.home_position}) · ${d.away} (#${d.away_position})</div>
+      <div class="predict-label">#${d.home_position} · #${d.away_position}</div>
       <div class="proba-bars">
         ${Object.entries(p).map(([k,v])=>`
           <div class="proba-item">
