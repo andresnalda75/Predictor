@@ -82,7 +82,8 @@
     border-radius:8px;font-family:'DM Sans',sans-serif;font-weight:600;font-size:.9rem;
     cursor:pointer;transition:opacity .2s;}
   .btn-search:hover{opacity:.85;}
-  .h2h-summary{display:flex;gap:1.5rem;margin-bottom:1.5rem;flex-wrap:wrap;}
+  .h2h-summary{display:flex;gap:1.5rem;margin-bottom:1.5rem;flex-wrap:wrap;align-items:flex-start;}
+  .h2h-stat{text-align:center;display:flex;flex-direction:column;align-items:center;gap:.25rem;}
   .h2h-stat{text-align:center;}
   .h2h-stat .n{font-family:'Archivo Black',sans-serif;font-size:1.8rem;}
   .h2h-stat .l{font-size:.78rem;color:var(--muted);}
@@ -507,14 +508,14 @@ async function loadH2H(){
   const s=d.summary;
   document.getElementById('h2h-result').innerHTML=`
     <div class="h2h-summary">
-      <div class="h2h-stat"><div class="n green">${s.home_wins}</div><div class="l">${home.split(' ')[0]} Wins</div></div>
+      <div class="h2h-stat">${crestImg(home,36)}<div class="n green">${s.home_wins}</div><div class="l">${home} Wins</div></div>
       <div class="h2h-stat"><div class="n amber">${s.draws}</div><div class="l">Draws</div></div>
-      <div class="h2h-stat"><div class="n red">${s.away_wins}</div><div class="l">${away.split(' ')[0]} Wins</div></div>
+      <div class="h2h-stat">${crestImg(away,36)}<div class="n red">${s.away_wins}</div><div class="l">${away} Wins</div></div>
     </div>
     ${d.matches.length===0?'<p style="color:var(--muted)">No matches found.</p>':
       d.matches.map(m=>`<div class="match-row">
         <span class="match-date">${m.date}</span>
-        <span class="match-teams">${m.home} vs ${m.away}</span>
+        <span class="match-teams">${crestImg(m.home,18)} ${m.home} vs ${crestImg(m.away,18)} ${m.away}</span>
         <span class="match-score">${m.score}</span>
         <span class="result-badge ${m.result}">${m.result}</span>
       </div>`).join('')}`;
