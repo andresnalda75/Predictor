@@ -3,7 +3,16 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>EPL Predictor Dashboard</title>
+<title>EPL Predictor</title>
+<meta name="description" content="Predict Premier League match outcomes with machine learning — 57.1% accuracy, above academic SOTA.">
+<meta name="theme-color" content="#38003c">
+<!-- PWA -->
+<link rel="manifest" href="/static/manifest.json">
+<!-- iOS home screen -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="EPL Predictor">
+<link rel="apple-touch-icon" href="/static/icon-192.png">
 <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -863,6 +872,13 @@ function renderFixtures(mode){
     html += '</div>';
   });
   container.innerHTML = html || '<div class="loading">No upcoming fixtures found.</div>';
+}
+</script>
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js');
+  });
 }
 </script>
 </body>

@@ -1,4 +1,4 @@
-from flask import Flask, render_template, jsonify, request
+from flask import Flask, render_template, jsonify, request, send_from_directory
 import pandas as pd
 import numpy as np
 import pickle
@@ -257,6 +257,10 @@ def get_h2h_record(home, away, n=10):
 @app.route("/")
 def index():
     return render_template("index.html", teams=ALL_TEAMS)
+
+@app.route("/sw.js")
+def service_worker():
+    return send_from_directory("static", "sw.js", mimetype="application/javascript")
 
 CURRENT_SEASON_TEAMS = sorted([
     "Arsenal", "Aston Villa", "Bournemouth", "Brentford", "Brighton",
