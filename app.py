@@ -347,8 +347,10 @@ def api_predict_fixtures():
             h_sh,h_sha,h_sot,h_sota         = get_rolling_shots(home)
             a_sh,a_sha,a_sot,a_sota         = get_rolling_shots(away)
 
-            elo_home = live_df[live_df["home_team"]==home]["elo_home"].iloc[-1] if len(live_df[live_df["home_team"]==home]) else 1500
-            elo_away = live_df[live_df["away_team"]==away]["elo_away"].iloc[-1] if len(live_df[live_df["away_team"]==away]) else 1500
+            hist_rows = hist_df[hist_df["home_team"]==home]
+            elo_home = hist_rows["elo_home"].iloc[-1] if len(hist_rows) else 1500
+            hist_rows = hist_df[hist_df["away_team"]==away]
+            elo_away = hist_rows["elo_away"].iloc[-1] if len(hist_rows) else 1500
             elo_diff = elo_home - elo_away
 
             feat_dict = {
