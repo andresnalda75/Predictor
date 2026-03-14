@@ -9,6 +9,46 @@ app = Flask(__name__)
 
 import threading, time, os
 _startup_time = time.time()
+
+# ── TTL cache config ──────────────────────────────────────────────────────────
+_CACHE_TTL = 30 * 60  # 30 minutes
+
+# Standings cache — refreshed lazily on prediction requests when stale
+_standings_lock = threading.Lock()
+_standings_ts   = 0.0   # set to 0 so first call always refreshes
+
+def _refresh_standings():
+    """Re-fetch standings if the cache is older than _CACHE_TTL. Thread-safe."""
+    global standings_cache, _standings_ts
+    if time.time() - _standings_ts < _CACHE_TTL:
+        return
+    with _standings_lock:
+        if time.time() - _standings_ts < _CACHE_TTL:   # double-checked locking
+            return
+        try:
+            standings_cache = fetch_standings()
+            _standings_ts   = time.time()
+            print(f"[cache] standings refreshed ({len(standings_cache)} teams)")
+        except Exception as e:
+            print(f"[cache] standings refresh failed: {e}")
+
+# Fixtures cache — avoid hitting the API on every /api/predict_fixtures call
+_fixtures_cache = None
+_fixtures_ts    = 0.0
+_fixtures_lock  = threading.Lock()
+
+def _get_cached_fixtures():
+    """Return cached upcoming fixtures, re-fetching if stale."""
+    global _fixtures_cache, _fixtures_ts
+    if _fixtures_cache is not None and time.time() - _fixtures_ts < _CACHE_TTL:
+        return _fixtures_cache
+    with _fixtures_lock:
+        if _fixtures_cache is not None and time.time() - _fixtures_ts < _CACHE_TTL:
+            return _fixtures_cache
+        _fixtures_cache = fetch_upcoming()
+        _fixtures_ts    = time.time()
+        print(f"[cache] fixtures refreshed ({len(_fixtures_cache)} upcoming)")
+    return _fixtures_cache
 os.environ["FOOTBALL_DATA_API_KEY"] = "3966f7fa5a62439e9a84c5ddbc41dae0"  # will use Railway env var in production
 from live_data import fetch_current_season, fetch_standings, fetch_upcoming, CREST_MAP
 from injury_data import load_injuries, get_injury_count
@@ -17,6 +57,7 @@ from injury_data import load_injuries, get_injury_count
 try:
     live_season = fetch_current_season()
     standings_cache = fetch_standings()
+    _standings_ts   = time.time()   # mark cache as fresh
     print(f"✅ Live data loaded: {len(live_season)} matches")
 except Exception as e:
     print(f"⚠️ Live data failed: {e}")
@@ -367,6 +408,7 @@ def api_predict():
     if not home or not away: return jsonify({"error":"Select both teams"})
     if home == away: return jsonify({"error":"Teams must be different"})
 
+    _refresh_standings()
     h_pts,h_gf,h_ga,h_wins,h_draws = get_form(home)
     a_pts,a_gf,a_ga,a_wins,a_draws = get_form(away)
     hh_pts,hh_gf,hh_ga,_,_         = get_form(home, home_only=True)
@@ -487,8 +529,9 @@ def api_validation():
 
 @app.route("/api/predict_fixtures")
 def api_predict_fixtures():
+    _refresh_standings()
     try:
-        fixtures = fetch_upcoming()
+        fixtures = _get_cached_fixtures()
     except Exception as e:
         return jsonify({"error": str(e)})
 
