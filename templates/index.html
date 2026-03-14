@@ -358,6 +358,17 @@
   </section>
 
   <section id="halftime" class="section">
+    <div style="background:var(--epl);border-radius:14px;padding:1.5rem 1.75rem;margin-bottom:1rem;
+      box-shadow:0 4px 20px rgba(56,0,60,.35)">
+      <div style="font-family:'Archivo Black',sans-serif;font-size:1.35rem;color:#fff;margin-bottom:.5rem">
+        <span style="color:var(--epl2)">43.4%</span> of EPL games flip after half time
+      </div>
+      <p style="font-size:.92rem;color:rgba(255,255,255,.85);line-height:1.6;margin:0">
+        A 1-0 lead is never safe. Our model predicts the final result with
+        <span style="color:var(--epl2);font-weight:700"><span id="hero-ht-acc-banner">…</span>% accuracy</span>
+        using the half-time score, form, and league position.
+      </p>
+    </div>
     <div class="card" style="margin-bottom:1rem">
       <div class="card-title">Half Time Predictor</div>
       <p style="font-size:.85rem;color:var(--muted);margin-bottom:1.5rem">
@@ -384,9 +395,9 @@
     <div class="card">
       <div class="card-title">About this model</div>
       <p style="font-size:.88rem;line-height:1.7;color:#374151">
-        The in-game model uses the half time score alongside team form and league position.
-        Key insight: <strong>43.4% of EPL games flip from half time to full time</strong> — 
-        so even a 1-0 lead is not safe! The model accounts for this based on 8 seasons of data.
+        The in-game model uses the half time score alongside team form and league position,
+        trained on 8 seasons of EPL data (2017–2025, COVID excluded). It accounts for the high
+        rate of second-half turnarounds to predict the final result from any half-time scoreline.
       </p>
     </div>
   
@@ -545,6 +556,7 @@ async function loadOverview(){
   document.getElementById('about-ht-acc').textContent = d.ing_accuracy+'%';
   document.getElementById('hero-acc').textContent = d.pre_accuracy+'%';
   document.getElementById('hero-ht-acc').textContent = d.ing_accuracy+'%';
+  document.getElementById('hero-ht-acc-banner').textContent = d.ing_accuracy;
   document.getElementById('hero-beat').textContent = '+' + (d.pre_accuracy - d.random_baseline).toFixed(1) + 'pp';
   document.getElementById('hero-matches').textContent = d.total_matches.toLocaleString();
 }
