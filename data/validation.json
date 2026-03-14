@@ -1,25 +1,48 @@
 {
-  "accuracy": 0.5707,
-  "correct": 475,
-  "total": 832,
-  "p_value": 5.13e-26,
-  "beats_random_by": 71.2,
-  "rps": 0.2045,
-  "high_conf_acc": 0.6522,
-  "high_conf_n": 230,
-  "low_conf_acc": 0.4408,
-  "low_conf_n": 152,
-  "draw_recall": 0.0079,
+  "accuracy": 0.5647,
+  "correct": 471,
+  "total": 834,
+  "p_value": 1.0548106144670555e-42,
+  "beats_random_by": 69.4,
+  "rps": 0.1959,
+  "draw_recall": 0.0052,
+  "high_conf_acc": 0.6265,
+  "high_conf_n": 490,
+  "low_conf_acc": 0.4767,
+  "low_conf_n": 344,
   "per_outcome": {
-    "H": {"recall": 0.8348, "precision": 0.5516, "n": 224},
-    "D": {"recall": 0.0079, "precision": 0.25, "n": 127},
-    "A": {"recall": 0.5967, "precision": 0.5714, "n": 181}
+    "A": {
+      "precision": 0.554,
+      "recall": 0.5867,
+      "f1-score": 0.5699,
+      "support": 271.0
+    },
+    "D": {
+      "precision": 0.1429,
+      "recall": 0.0052,
+      "f1-score": 0.0101,
+      "support": 191.0
+    },
+    "H": {
+      "precision": 0.5759,
+      "recall": 0.836,
+      "f1-score": 0.682,
+      "support": 372.0
+    }
   },
-  "model_version": "8 seasons (2017-2025, no COVID), XGBoost + Optuna + Pi-ratings, 36 features",
-  "walk_forward_accuracy": 0.5280,
-  "walk_forward_rps": 0.2100,
-  "big_game_acc": 0.565,
-  "big_game_n": 278,
-  "close_game_acc": 0.548,
-  "close_game_n": 554
+  "model_version": "8 seasons (2017-2025, no COVID), XGBoost + Optuna + Pi-ratings, retrained 2026-03-14",
+  "walk_forward_accuracy": 0.5501,
+  "walk_forward_rps": 0.2013,
+  "walk_forward_draw_recall": 0.0299,
+  "best_params": {
+    "n_estimators": 735,
+    "learning_rate": 0.01264528038658574,
+    "max_depth": 8,
+    "subsample": 0.9877068649456822,
+    "colsample_bytree": 0.8592178675217194,
+    "min_child_weight": 4,
+    "gamma": 3.7746846475639813,
+    "reg_alpha": 2.656415229224513e-05,
+    "reg_lambda": 2.115292442016777e-06
+  }
 }
