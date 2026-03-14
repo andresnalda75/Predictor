@@ -178,6 +178,32 @@ def get_pi_rating(team):
         return r["R_h"], r["R_a"], r["overall"]
     return 0.0, 0.0, 0.0
 
+def get_days_rest(team):
+    """Days since the team's most recent match in live_df."""
+    tm = live_df[((live_df["home_team"]==team)|(live_df["away_team"]==team))]
+    if len(tm) == 0:
+        return 7
+    last_date = tm.iloc[-1]["date"]
+    return max((pd.Timestamp.now() - last_date).days, 0)
+
+def get_momentum(team, n=5):
+    """Form momentum: PPG in last n matches minus PPG in prior n matches.
+    Positive = rising, negative = falling."""
+    tm = live_df[((live_df["home_team"]==team)|(live_df["away_team"]==team))]
+    if len(tm) < 2:
+        return 0.0
+    recent = tm.tail(n)
+    older  = tm.iloc[max(0, len(tm)-2*n):max(0, len(tm)-n)]
+    def _ppg(matches):
+        if len(matches) == 0: return 0.0
+        pts = 0
+        for _, r in matches.iterrows():
+            ih = r["home_team"] == team
+            if (ih and r["result"]=="H") or (not ih and r["result"]=="A"): pts += 3
+            elif r["result"]=="D": pts += 1
+        return pts / len(matches)
+    return _ppg(recent) - _ppg(older)
+
 @app.route("/")
 def index():
     return render_template("index.html", teams=ALL_TEAMS)
@@ -310,6 +336,8 @@ def api_predict():
         "matchday":30,
         "elo_home":elo_home,"elo_away":elo_away,"elo_diff":elo_diff,
         "pi_home":h_pi_rh,"pi_away":a_pi_ra,"pi_diff":h_pi_rh-a_pi_ra,
+        "home_days_rest":get_days_rest(home),"away_days_rest":get_days_rest(away),
+        "home_momentum":get_momentum(home),"away_momentum":get_momentum(away),
         "home_shots_avg":h_sh,"home_shots_against_avg":h_sha,
         "home_sot_avg":h_sot,"home_sot_against_avg":h_sota,
         "away_shots_avg":a_sh,"away_shots_against_avg":a_sha,
@@ -434,6 +462,8 @@ def api_predict_fixtures():
                 "matchday":fix["matchday"],
                 "elo_home":elo_home,"elo_away":elo_away,"elo_diff":elo_diff,
                 "pi_home":h_pi_rh,"pi_away":a_pi_ra,"pi_diff":h_pi_rh-a_pi_ra,
+                "home_days_rest":get_days_rest(home),"away_days_rest":get_days_rest(away),
+                "home_momentum":get_momentum(home),"away_momentum":get_momentum(away),
                 "home_shots_avg":h_sh,"home_shots_against_avg":h_sha,
                 "home_sot_avg":h_sot,"home_sot_against_avg":h_sota,
                 "away_shots_avg":a_sh,"away_shots_against_avg":a_sha,
