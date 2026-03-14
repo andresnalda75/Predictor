@@ -10,8 +10,14 @@ Flask web app deployed on Railway that predicts EPL match outcomes using XGBoost
 - `app.py` — Flask backend, feature engineering, all API routes
 - `templates/index.html` — full frontend (8 tabs, vanilla JS)
 - `live_data.py` — football-data.org integration (results, standings, fixtures)
+- `injury_data.py` — API-Football integration (pre-match injury counts)
+- `scripts/calculate_pi_ratings.py` — Pi-ratings calculation from hist_matches.csv
 - `models/` — xgb_champion, xgb_halftime, cols_champion, cols_halftime, label_encoder
-- `data/` — hist_matches.csv, hist_features.csv, validation.json
+- `data/` — hist_matches.csv, hist_features.csv, validation.json, pi_ratings.csv, pi_team_ratings.csv
+
+**Environment variables:**
+- `FOOTBALL_DATA_API_KEY` — football-data.org API v4 key (match results, standings, fixtures)
+- `APIFOOTBALL_KEY` — API-Football key (injury data). Optional; app degrades gracefully without it. Free tier: 100 req/day. Sign up at api-sports.io
 
 ---
 
