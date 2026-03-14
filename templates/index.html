@@ -870,7 +870,7 @@ function filterFixtures(mode, btn){
 
 function formDots(form){
   if(!form||!form.length) return '';
-  return `<span class="form-dots">${form.slice(0,4).map(r=>`<span class="form-dot ${r}" title="${r}"></span>`).join('')}</span>`;
+  return `<span class="form-dots">${form.slice(0,5).map(r=>`<span class="form-dot ${r}" title="${r}"></span>`).join('')}</span>`;
 }
 
 function renderFixtures(mode){
