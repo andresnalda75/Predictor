@@ -129,6 +129,13 @@ def get_rolling_shots(team, n=5):
 def index():
     return render_template("index.html", teams=ALL_TEAMS)
 
+CURRENT_SEASON_TEAMS = sorted([
+    "Arsenal", "Aston Villa", "Bournemouth", "Brentford", "Brighton",
+    "Burnley", "Chelsea", "Crystal Palace", "Everton", "Fulham",
+    "Leeds United", "Liverpool", "Man City", "Man United", "Newcastle",
+    "Nott'm Forest", "Sunderland", "Tottenham", "West Ham", "Wolves"
+])
+
 @app.route("/api/current_teams")
 def api_current_teams():
     if standings_cache:
@@ -136,7 +143,7 @@ def api_current_teams():
     if live_season is not None and len(live_season) > 0:
         teams = sorted(set(live_season["home_team"].tolist() + live_season["away_team"].tolist()))
         return jsonify(teams)
-    return jsonify(ALL_TEAMS)
+    return jsonify(CURRENT_SEASON_TEAMS)
 
 @app.route("/api/overview")
 def api_overview():
