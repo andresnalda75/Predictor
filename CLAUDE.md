@@ -12,6 +12,8 @@ Flask web app deployed on Railway that predicts EPL match outcomes using XGBoost
 - `live_data.py` — football-data.org integration (results, standings, fixtures)
 - `injury_data.py` — API-Football integration (pre-match injury counts)
 - `scripts/calculate_pi_ratings.py` — Pi-ratings calculation from hist_matches.csv
+- `notebooks/retrain_model.py` — Colab retraining pipeline (champion model)
+- `notebooks/retrain_halftime.py` — Colab retraining pipeline (halftime model)
 - `models/` — xgb_champion, xgb_halftime, cols_champion, cols_halftime, label_encoder
 - `data/` — hist_matches.csv, hist_features.csv, validation.json, pi_ratings.csv, pi_team_ratings.csv
 
@@ -23,76 +25,103 @@ Flask web app deployed on Railway that predicts EPL match outcomes using XGBoost
 
 ## Current Baseline
 
-| Model | Accuracy | Notes |
-|---|---|---|
-| Pre-match (deployed) | 57.1% | Shown in Predict tab |
-| Pre-match (Colab best) | 55.6% | 8 seasons, XGBoost + Optuna |
-| Halftime in-game | 60.6% | Uses HT score + form + ELO |
-| Random baseline | 33.3% | 3-outcome coin flip |
-| Pro benchmark | 54–56% | Industry standard |
+| Model | Accuracy | Features | Test Matches | Notes |
+|---|---|---|---|---|
+| Pre-match (deployed) | 57.07% | 36 | 834 | XGBoost + Optuna + Pi-ratings + exp. decay |
+| Halftime in-game | 60.6% | 19 | 834 | Uses HT score + form + ELO |
+| Random baseline | 33.3% | — | — | 3-outcome coin flip |
+| Pro benchmark | 54–56% | — | — | Industry standard |
+
+**Pre-match model details (retrained 2026-03-14):**
+- RPS: 0.1951 (random ≈ 0.222)
+- Draw recall: 1.57% (critical weakness, draws are 23% of outcomes)
+- High confidence (>=50%): 63.5% accuracy on 499 matches
+- Big game (8+ pos gap): 56.5% on 278 matches
+- Close game (<4 pos gap): 54.8% on 554 matches
+- Walk-forward accuracy: 55.01%
+- Key features: Pi-ratings, ELO, form (exp. decay), league position, shots
 
 ---
 
-## Agent Definitions
+## Agent Status (as of 2026-03-14)
 
-### Agent 1 — `model-trainer` (Google Colab)
-**Branch:** _(work done in Colab, push directly to main)_
-**Goal:** Improve pre-match model accuracy beyond 55.6%
-**Tasks:**
-- Experiment with additional features (xG, referee, weather, travel distance)
-- Try ensemble methods (XGBoost + LightGBM stacking)
-- Tune Optuna hyperparameter search budget
-- Evaluate on held-out 2025/26 season data
-- Export updated pkl files and push to GitHub
-
-### Agent 2 — `data-pipeline`
-**Branch:** `data-pipeline`
-**Goal:** Keep training data fresh and expand feature set
-**Tasks:**
-- Script to fetch completed 2025/26 matches from football-data.org and append to hist_matches.csv
-- Recalculate ELO ratings dynamically (currently static at 1500 for live matches)
-- Add shots data for live matches (currently zeroed out in fetch_current_season)
-- Add xG data source if available
-- Automate seasonal data updates
-
-### Agent 3 — `frontend-improvements`
-**Branch:** `frontend-improvements`
-**Goal:** Improve UX and add useful features for users
-**Tasks:**
-- Mobile responsiveness improvements (nav tabs overflow on small screens)
-- Add team search/filter to fixtures tab
-- Show form indicators (last 5 results) alongside predictions
-- Add a "How accurate have we been this week?" banner on overview
+### Agent 1 — `frontend-improvements` ✅ DONE
+**All tasks complete:**
+- Mobile responsiveness (hamburger nav, touch-friendly tabs)
+- Team search/filter on fixtures tab
+- Form dots (last 5 results W/D/L)
+- PWA with service worker
+- Injury indicators
 - Dark mode toggle
+- H2H summary in predictions
 
-### Agent 4 — `benchmarking`
-**Branch:** `benchmarking`
-**Goal:** Track model performance over time with rigorous metrics
+### Agent 2 — `data-pipeline` ✅ DONE
+**All tasks complete:**
+- Pi-ratings calculated and integrated (scripts/calculate_pi_ratings.py)
+- Exponential decay weighting in get_form()
+- hist_features.csv rebuilt with 36 features + join keys (date, home_team, away_team)
+- Pi-team-ratings.csv for live predictions
+
+### Agent 3 — `model-improvements` (this agent)
+**Branch:** `model-improvements`
+**Goal:** Improve model accuracy beyond 57.07%
+**Completed:**
+- Retrained champion model: 55.6% → 57.07% (+1.47pp)
+- Pi-ratings integrated (pi_home, pi_away, pi_diff)
+- RFE feature selection (41 candidates → 36 selected)
+- Optuna hyperparameter search with walk-forward CV
+- Fixed cols_champion.pkl mismatch (15 → 36 features)
+- Fixed away_form_ga bug (was using a_gf instead of a_ga)
+- Fixed validation.json accuracy source (now reads from file, not recalculated)
+- Created retrain_halftime.py pipeline
+- Fixed halftime merge (date+team join keys instead of index alignment)
+
+### Agent 4 — `benchmarking` (not started)
+**Goal:** Value betting / Odds API integration
 **Tasks:**
-- Build a prediction log — store every fixture prediction with actual result
+- Odds API integration for value bet detection
+- Prediction logging (store every prediction with actual result)
 - Weekly accuracy report (rolling 10-match accuracy)
-- Compare live accuracy vs validation accuracy (detect drift)
 - Calibration curve for confidence scores
-- Update validation.json automatically after each matchday
 
-### Agent 5 — `deployment`
-**Branch:** _(deploy from main only)_
-**Goal:** Keep Railway deployment stable and fast
-**Tasks:**
-- Add health check endpoint (`/health`)
-- Cache live API calls (standings, fixtures) with TTL to avoid rate limits
-- Environment variable audit (API key should only come from Railway env, not hardcoded)
-- Add basic logging for prediction requests
-- Monitor memory usage (large CSVs loaded at startup)
+### Agent 5 — `deployment` ✅ DONE
+**Completed:**
+- /health endpoint
+- Caching for live API calls
+- Basic logging for prediction requests
+- Competitive analysis complete
+
+---
+
+## Dormant Features (in app.py, ready for next retrain)
+
+These features are computed at prediction time but NOT yet in the trained model's feature set. Include them as candidates in the next retrain:
+
+| Feature | Function | Description |
+|---|---|---|
+| `home_days_rest` / `away_days_rest` | `get_days_rest()` | Days since last match |
+| `home_momentum` / `away_momentum` | `get_momentum()` | PPG delta (recent 5 vs prior 5) |
+| `h2h_home_wins` / `h2h_draws` / `h2h_away_wins` | `get_h2h()` | Head-to-head record |
+| `home_injuries` / `away_injuries` | `get_injury_count()` | Pre-match injury count (API-Football) |
+
+---
+
+## Next Session Priorities
+
+1. **A4:** Value betting / Odds API integration (not started)
+2. **A3:** Try CatBoost and LightGBM as alternatives to XGBoost
+3. **A3:** Halftime retrain with draw-weighted objective (address 1.57% draw recall)
+4. **A5:** Run `benchmarks/compare.py` in Colab for authoritative RPS benchmarks
+5. **A3:** Include dormant features (rest, momentum, H2H, injuries) in next retrain
 
 ---
 
 ## Phase Sequence
 
-1. **Stabilise** — fix data pipeline (ELO, shots for live matches), keep deployed model working
+1. ~~**Stabilise** — fix data pipeline (ELO, shots for live matches), keep deployed model working~~ ✅
 2. **Benchmark** — set up prediction logging so we can track live accuracy week by week
-3. **Improve model** — retrain with better features, target >56% pre-match
-4. **Frontend polish** — mobile, form indicators, search
+3. ~~**Improve model** — retrain with better features, target >56% pre-match~~ ✅ (57.07%)
+4. ~~**Frontend polish** — mobile, form indicators, search~~ ✅
 5. **Monetise** — see MARKETING.md
 
 ---
@@ -106,3 +135,4 @@ Flask web app deployed on Railway that predicts EPL match outcomes using XGBoost
 - Keep requirements.txt unpinned unless a version conflict arises
 - The halftime model (`xgb_halftime.pkl`) and champion model (`xgb_champion.pkl`) are independent — changes to one do not require retraining the other
 - Before any data pipeline change, verify that hist_matches.csv and hist_features.csv stay in sync (same row count and date alignment)
+- validation.json is the source of truth for displayed accuracy — app.py reads VALIDATED_ACCURACY from it at startup
