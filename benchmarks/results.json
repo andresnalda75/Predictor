@@ -1,11 +1,10 @@
 {
   "description": "Model performance tracking over time. Each entry represents an evaluation snapshot. Run benchmarks/compare.py --update-results to populate RPS and walk-forward fields.",
-
   "academic_benchmarks": [
     {
       "model": "Bookmaker implied odds",
       "accuracy": 0.65,
-      "notes": "Market consensus — effectively the ceiling for EPL 3-outcome prediction"
+      "notes": "Market consensus \u2014 effectively the ceiling for EPL 3-outcome prediction"
     },
     {
       "model": "LightGBM (xG + advanced features)",
@@ -23,7 +22,6 @@
       "notes": "Uniform prior across H/D/A"
     }
   ],
-
   "entries": [
     {
       "date": "2026-03",
@@ -39,6 +37,123 @@
       "walk_forward_rps": null,
       "walk_forward_draw_recall": null,
       "notes": "Baseline. 80/20 chronological split. Run compare.py --update-results in Colab to fill RPS fields."
+    },
+    {
+      "date": "2026-03-14",
+      "model": "XGBoost + Optuna + Pi-ratings + RFE",
+      "accuracy": 0.5647,
+      "rps": 0.1959,
+      "draw_recall": 0.0052,
+      "n_features": 36,
+      "features": [
+        "home_form_pts",
+        "home_form_gf",
+        "home_form_gd",
+        "home_form_wins",
+        "away_form_gf",
+        "away_form_gd",
+        "away_form_draws",
+        "home_home_pts",
+        "home_home_gd",
+        "away_away_pts",
+        "away_away_gd",
+        "pts_diff",
+        "gd_diff",
+        "home_position",
+        "position_diff",
+        "league_pts_diff",
+        "home_league_gd",
+        "away_league_gd",
+        "matchday",
+        "elo_home",
+        "elo_away",
+        "elo_diff",
+        "pi_home",
+        "pi_away",
+        "pi_diff",
+        "home_shots_avg",
+        "home_shots_against_avg",
+        "home_sot_avg",
+        "home_sot_against_avg",
+        "away_shots_avg",
+        "away_shots_against_avg",
+        "away_sot_avg",
+        "away_sot_against_avg",
+        "shots_diff",
+        "sot_diff",
+        "corners_diff"
+      ],
+      "walk_forward_accuracy": 0.5501,
+      "walk_forward_rps": 0.2013,
+      "best_params": {
+        "n_estimators": 735,
+        "learning_rate": 0.01264528038658574,
+        "max_depth": 8,
+        "subsample": 0.9877068649456822,
+        "colsample_bytree": 0.8592178675217194,
+        "min_child_weight": 4,
+        "gamma": 3.7746846475639813,
+        "reg_alpha": 2.656415229224513e-05,
+        "reg_lambda": 2.115292442016777e-06
+      }
+    },
+    {
+      "date": "2026-03-14",
+      "model": "halftime XGBoost + Optuna + Pi-ratings + RFE",
+      "accuracy": 0.6091,
+      "rps": 0.1601,
+      "draw_recall": 0.1518,
+      "n_features": 35,
+      "features": [
+        "home_form_pts",
+        "home_form_gf",
+        "home_form_gd",
+        "home_form_wins",
+        "away_form_pts",
+        "away_form_ga",
+        "away_form_gd",
+        "away_form_wins",
+        "home_home_pts",
+        "away_away_pts",
+        "away_away_gd",
+        "pts_diff",
+        "gd_diff",
+        "position_diff",
+        "away_league_pts",
+        "league_pts_diff",
+        "away_league_gd",
+        "elo_home",
+        "elo_away",
+        "elo_diff",
+        "pi_away",
+        "home_shots_avg",
+        "home_shots_against_avg",
+        "home_sot_against_avg",
+        "away_shots_avg",
+        "away_shots_against_avg",
+        "away_sot_against_avg",
+        "shots_diff",
+        "sot_diff",
+        "ht_home",
+        "ht_away",
+        "ht_gd",
+        "ht_result_H",
+        "ht_result_D",
+        "ht_result_A"
+      ],
+      "walk_forward_accuracy": 0.6359,
+      "walk_forward_rps": 0.1541,
+      "best_params": {
+        "n_estimators": 146,
+        "learning_rate": 0.2313319837830676,
+        "max_depth": 6,
+        "subsample": 0.6282989372137926,
+        "colsample_bytree": 0.5749903566318499,
+        "min_child_weight": 8,
+        "gamma": 3.291279984737058,
+        "reg_alpha": 1.4167850340798116e-08,
+        "reg_lambda": 5.319967543282302
+      }
     }
   ]
 }
