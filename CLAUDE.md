@@ -12,6 +12,7 @@ Flask web app deployed on Railway that predicts EPL match outcomes using XGBoost
 - `live_data.py` — football-data.org integration (results, standings, fixtures)
 - `injury_data.py` — API-Football integration (pre-match injury counts)
 - `scripts/calculate_pi_ratings.py` — Pi-ratings calculation from hist_matches.csv
+- `scripts/add_odds_to_hist.py` — Download B365 odds from football-data.co.uk into hist_matches.csv
 - `notebooks/retrain_model.py` — Colab retraining pipeline (champion model)
 - `notebooks/retrain_halftime.py` — Colab retraining pipeline (halftime model)
 - `notebooks/experiment_catboost.py` — CatBoost vs XGBoost vs LightGBM comparison
@@ -50,7 +51,7 @@ Flask web app deployed on Railway that predicts EPL match outcomes using XGBoost
 
 | # | Improvement | Data Source | Est. Impact | Status |
 |---|---|---|---|---|
-| 1 | **Bookmaker odds as features** — football-data.co.uk CSV has B365H/B365D/B365A columns. Add implied probability features from odds. | football-data.co.uk (free CSV) | +2-3% accuracy | Not started |
+| 1 | **Bookmaker odds as features** — football-data.co.uk CSV has B365H/B365D/B365A columns. Add implied probability features from odds. | football-data.co.uk (free CSV) | +2-3% accuracy | IN PROGRESS — B365 odds merged into hist_matches.csv, 5 derived features (implied probs, home edge, favourite) added to retrain pipeline. Awaiting retrain. |
 | 2 | **xG from Understat** — free historical xG for EPL teams. Better than shots on target for measuring chance quality. | understat.com (free, scrape) | +1-2% accuracy | Not started |
 | 3 | **Ensemble voting** — combine XGBoost + CatBoost + LightGBM predictions via meta-learner (stacking). | Internal | +1-2% accuracy | CatBoost experiment running |
 | 4 | **Auto-retrain weekly** — accuracy improves +0.32% per week as season data accumulates. Set up GitHub Action to retrain on schedule. | GitHub Actions | +0.3%/week cumulative | Not started |

@@ -148,6 +148,20 @@ def build_features(matches_df, pi_df):
     for col in ["pi_home", "pi_away", "pi_diff", "pi_home_overall", "pi_away_overall"]:
         matches[col] = pi[col].values
 
+    # Bookmaker odds — derive implied probabilities from B365 columns
+    has_odds = all(c in matches.columns for c in ["B365H", "B365D", "B365A"])
+    if has_odds:
+        matches["b365_implied_home"] = 1.0 / matches["B365H"]
+        matches["b365_implied_draw"] = 1.0 / matches["B365D"]
+        matches["b365_implied_away"] = 1.0 / matches["B365A"]
+        matches["b365_home_edge"] = matches["b365_implied_home"] - (1.0 / 3)
+        implied = matches[["b365_implied_home", "b365_implied_draw", "b365_implied_away"]].values
+        matches["b365_favourite"] = implied.argmax(axis=1)  # 0=H, 1=D, 2=A
+        print(f"  Bookmaker odds: {matches['B365H'].notna().sum()}/{len(matches)} matches have B365 data")
+    else:
+        print("  WARNING: B365H/B365D/B365A columns not found in hist_matches.csv")
+        print("  Run: python scripts/add_odds_to_hist.py to add them")
+
     # Identify season boundaries
     seasons = sorted(matches["season_code"].unique())
     print(f"Seasons: {seasons}")
@@ -219,8 +233,17 @@ def build_features(matches_df, pi_df):
             "away_sot_avg": a_sot, "away_sot_against_avg": a_sota,
             "shots_diff": h_sh - a_sh, "sot_diff": h_sot - a_sot,
             "corners_diff": (row.get("hc", 0) or 0) - (row.get("ac", 0) or 0),
-            "result": row["result"],
         }
+
+        # Bookmaker odds derived features
+        if has_odds and pd.notna(row.get("b365_implied_home")):
+            feat["b365_implied_home"] = row["b365_implied_home"]
+            feat["b365_implied_draw"] = row["b365_implied_draw"]
+            feat["b365_implied_away"] = row["b365_implied_away"]
+            feat["b365_home_edge"] = row["b365_home_edge"]
+            feat["b365_favourite"] = int(row["b365_favourite"])
+
+        feat["result"] = row["result"]
         rows.append(feat)
 
         if len(rows) % 500 == 0:
