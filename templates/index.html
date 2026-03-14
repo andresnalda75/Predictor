@@ -154,6 +154,28 @@
   .form-dot.W{background:var(--green);}
   .form-dot.D{background:var(--amber);}
   .form-dot.L{background:var(--red,#ff1744);}
+  /* Standings table */
+  .standings-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+  .standings-table{width:100%;border-collapse:collapse;font-size:.88rem;min-width:560px;}
+  .standings-table th{text-align:center;padding:.6rem .5rem;font-size:.72rem;letter-spacing:.07em;
+    text-transform:uppercase;color:var(--muted);border-bottom:2px solid var(--border);white-space:nowrap;}
+  .standings-table th:nth-child(2){text-align:left;}
+  .standings-table td{padding:.6rem .5rem;border-bottom:1px solid var(--border);text-align:center;white-space:nowrap;}
+  .standings-table td:nth-child(2){text-align:left;}
+  .standings-table tr:last-child td{border-bottom:none;}
+  .standings-table tr:hover td{background:#f3f4f6;}
+  .standings-table td.pts{font-family:'Archivo Black',sans-serif;font-size:.95rem;}
+  .zone-cl td:first-child{border-left:3px solid var(--green);}
+  .zone-el td:first-child{border-left:3px solid #1976d2;}
+  .zone-conf td:first-child{border-left:3px solid var(--amber);}
+  .zone-rel td:first-child{border-left:3px solid var(--red,#ff1744);}
+  .zone-cl{background:#f0fdf4;}
+  .zone-el{background:#eff6ff;}
+  .zone-conf{background:#fffbeb;}
+  .zone-rel{background:#fff1f2;}
+  .standings-legend{display:flex;gap:1rem;flex-wrap:wrap;font-size:.78rem;color:var(--muted);margin-top:1rem;}
+  .legend-dot{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px;vertical-align:middle;}
+  .team-name-cell{display:flex;align-items:center;gap:.5rem;font-weight:600;}
 </style>
 </head>
 <body>
@@ -168,6 +190,7 @@
     <button class="tab-btn" onclick="showTab('halftime',this)">Half Time</button>
     <button class="tab-btn" onclick="showTab('validation',this)">Validation</button>
     <button class="tab-btn" onclick="showTab('fixtures',this)">Fixtures</button>
+    <button class="tab-btn" onclick="showTab('standings',this)">Standings</button>
   </nav>
   <button class="hamburger" id="hamburger" onclick="toggleMenu()" aria-label="Menu">
     <span></span><span></span><span></span>
@@ -182,6 +205,7 @@
   <button class="tab-btn" onclick="showTab('halftime',this)">Half Time</button>
   <button class="tab-btn" onclick="showTab('validation',this)">Validation</button>
   <button class="tab-btn" onclick="showTab('fixtures',this)">Fixtures</button>
+  <button class="tab-btn" onclick="showTab('standings',this)">Standings</button>
 </nav>
 <main>
   <section id="overview" class="section active">
@@ -341,6 +365,37 @@
       <div id="fixtures-container"><div class="loading">Loading predictions…</div></div>
     </div>
   </section>
+
+  <section id="standings" class="section">
+    <div class="card">
+      <div class="card-title">2025/26 Premier League Table</div>
+      <div class="standings-wrap">
+        <table class="standings-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Team</th>
+              <th>P</th>
+              <th>W</th>
+              <th>D</th>
+              <th>L</th>
+              <th>GF</th>
+              <th>GA</th>
+              <th>GD</th>
+              <th>Pts</th>
+            </tr>
+          </thead>
+          <tbody id="standings-tbody"><tr><td colspan="10" class="loading">Loading…</td></tr></tbody>
+        </table>
+      </div>
+      <div class="standings-legend">
+        <span><span class="legend-dot" style="background:#16a34a"></span>Champions League (Top 4)</span>
+        <span><span class="legend-dot" style="background:#1976d2"></span>Europa League (5th–6th)</span>
+        <span><span class="legend-dot" style="background:var(--amber)"></span>Conference League (7th)</span>
+        <span><span class="legend-dot" style="background:#ff1744"></span>Relegation (Bottom 3)</span>
+      </div>
+    </div>
+  </section>
 </main>
 <script>
 let teamsData=[];
@@ -367,6 +422,7 @@ function showTab(name,btn){
   if(name==='validation') loadValidation();
   if(name==='teams') loadTeams();
   if(name==='fixtures' && !window._fixturesData) loadFixtures();
+  if(name==='standings' && !window._standingsLoaded) loadStandings();
   if(name==='confidence') loadConfidence();
 }
 
@@ -636,6 +692,39 @@ loadOverview();
 </script>
 
 <script>
+async function loadStandings(){
+  window._standingsLoaded = true;
+  const d = await fetch('/api/standings').then(r=>r.json());
+  if(d.error){
+    document.getElementById('standings-tbody').innerHTML =
+      `<tr><td colspan="10" style="text-align:center;color:var(--muted);padding:2rem">${d.error}</td></tr>`;
+    return;
+  }
+  const total = d.length;
+  document.getElementById('standings-tbody').innerHTML = d.map(row=>{
+    const pos = row.position;
+    let zoneClass = '';
+    if(pos <= 4)            zoneClass = 'zone-cl';
+    else if(pos <= 6)       zoneClass = 'zone-el';
+    else if(pos === 7)      zoneClass = 'zone-conf';
+    else if(pos > total-3)  zoneClass = 'zone-rel';
+    const gd = row.gd > 0 ? '+'+row.gd : row.gd;
+    const crest = row.crest ? `<img src="${row.crest}" style="width:20px;height:20px;object-fit:contain;flex-shrink:0">` : '';
+    return `<tr class="${zoneClass}">
+      <td style="color:var(--muted);font-weight:600">${pos}</td>
+      <td><div class="team-name-cell">${crest}<span>${row.team||Object.keys(row)[0]}</span></div></td>
+      <td>${row.played}</td>
+      <td style="color:var(--green);font-weight:600">${row.won}</td>
+      <td style="color:var(--muted)">${row.drawn}</td>
+      <td style="color:var(--red,#ff1744)">${row.lost}</td>
+      <td>${row.gf}</td>
+      <td>${row.ga}</td>
+      <td style="font-weight:600">${gd}</td>
+      <td class="pts">${row.points}</td>
+    </tr>`;
+  }).join('');
+}
+
 async function loadFixtures(){
   const res = await fetch('/api/predict_fixtures');
   const data = await res.json();

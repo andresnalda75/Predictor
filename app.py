@@ -372,6 +372,16 @@ def api_predict_halftime():
         "home_position":h_pos,"away_position":a_pos
     })
 
+@app.route("/api/standings")
+def api_standings():
+    if not standings_cache:
+        return jsonify({"error": "Standings unavailable — live data failed to load"})
+    table = sorted(
+        [{"team": name, **data} for name, data in standings_cache.items()],
+        key=lambda x: x["position"]
+    )
+    return jsonify(table)
+
 @app.route("/api/validation")
 def api_validation():
     with open(os.path.join(BASE, "data", "validation.json")) as f:

@@ -89,14 +89,22 @@ def fetch_standings():
     )
     r.raise_for_status()
     table = r.json()["standings"][0]["table"]
-    return {
-        TEAM_MAP.get(row["team"]["name"], row["team"]["name"]): {
+    result = {}
+    for row in table:
+        name = TEAM_MAP.get(row["team"]["name"], row["team"]["name"])
+        result[name] = {
             "position": row["position"],
             "points":   row["points"],
             "gd":       row["goalDifference"],
+            "played":   row["playedGames"],
+            "won":      row["won"],
+            "drawn":    row["draw"],
+            "lost":     row["lost"],
+            "gf":       row["goalsFor"],
+            "ga":       row["goalsAgainst"],
+            "crest":    CREST_MAP.get(name, ""),
         }
-        for row in table
-    }
+    return result
 
 def fetch_upcoming():
     r = requests.get(
