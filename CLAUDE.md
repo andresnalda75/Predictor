@@ -14,6 +14,7 @@ Flask web app deployed on Railway that predicts EPL match outcomes using XGBoost
 - `scripts/calculate_pi_ratings.py` — Pi-ratings calculation from hist_matches.csv
 - `notebooks/retrain_model.py` — Colab retraining pipeline (champion model)
 - `notebooks/retrain_halftime.py` — Colab retraining pipeline (halftime model)
+- `notebooks/experiment_catboost.py` — CatBoost vs XGBoost vs LightGBM comparison
 - `models/` — xgb_champion, xgb_halftime, cols_champion, cols_halftime, label_encoder
 - `data/` — hist_matches.csv, hist_features.csv, validation.json, pi_ratings.csv, pi_team_ratings.csv
 
@@ -28,7 +29,7 @@ Flask web app deployed on Railway that predicts EPL match outcomes using XGBoost
 | Model | Accuracy | Features | Test Matches | Notes |
 |---|---|---|---|---|
 | Pre-match (deployed) | 57.07% | 36 | 834 | XGBoost + Optuna + Pi-ratings + exp. decay |
-| Halftime in-game | 60.6% | 19 | 834 | Uses HT score + form + ELO |
+| Halftime in-game | 60.6% | 35 | 834 | Uses HT score + form + ELO + Pi-ratings |
 | Random baseline | 33.3% | — | — | 3-outcome coin flip |
 | Pro benchmark | 54–56% | — | — | Industry standard |
 
@@ -40,6 +41,58 @@ Flask web app deployed on Railway that predicts EPL match outcomes using XGBoost
 - Close game (<4 pos gap): 54.8% on 554 matches
 - Walk-forward accuracy: 55.01%
 - Key features: Pi-ratings, ELO, form (exp. decay), league position, shots
+
+---
+
+## Model Improvement Roadmap
+
+### TIER 1 — HIGH IMPACT, DO NEXT
+
+| # | Improvement | Data Source | Est. Impact | Status |
+|---|---|---|---|---|
+| 1 | **Bookmaker odds as features** — football-data.co.uk CSV has B365H/B365D/B365A columns. Add implied probability features from odds. | football-data.co.uk (free CSV) | +2-3% accuracy | Not started |
+| 2 | **xG from Understat** — free historical xG for EPL teams. Better than shots on target for measuring chance quality. | understat.com (free, scrape) | +1-2% accuracy | Not started |
+| 3 | **Ensemble voting** — combine XGBoost + CatBoost + LightGBM predictions via meta-learner (stacking). | Internal | +1-2% accuracy | CatBoost experiment running |
+| 4 | **Auto-retrain weekly** — accuracy improves +0.32% per week as season data accumulates. Set up GitHub Action to retrain on schedule. | GitHub Actions | +0.3%/week cumulative | Not started |
+
+### TIER 2 — MEDIUM IMPACT, MORE WORK
+
+| # | Improvement | Notes |
+|---|---|---|
+| 5 | **Player market values from Transfermarkt** | Free, proven predictive of team quality in academic literature |
+| 6 | **Poisson regression model** | Model goals directly, derive draw probability from goal distribution. Better for draws than classification |
+| 7 | **Ordinal classification** | Treat H/D/A as ordered classes (A < D < H), not independent categories |
+| 8 | **Separate draw model** | Binary classifier for draw vs decisive, then combine with main model |
+| 9 | **SHAP explainability** | Show users WHY each prediction was made (feature contributions) |
+| 10 | **Siamese network** | Encode matchup directly as a team pair rather than two separate feature vectors |
+
+### TIER 3 — LONGER TERM
+
+| # | Improvement | Notes |
+|---|---|---|
+| 11 | **StatsBomb event data** | Passes, pressures, dribbles. Expensive but powerful |
+| 12 | **Tracking data** | Player positions. Not publicly available yet |
+
+### WHAT DIDN'T WORK — DO NOT RETRY WITHOUT NEW APPROACH
+
+| Attempt | Result | Root Cause |
+|---|---|---|
+| ELO hardcoded to 1500 for current season | Flat home bias predictions | Fixed by using hist_df for ELO lookup |
+| Retraining with 2025/26 season data without real ELO | Degraded 57.07% → 56.47% | ELO signal lost when all teams start at 1500 |
+| Reducing features below 36 via aggressive RFE | Accuracy drops below 54% | Features are complementary, not redundant |
+| Optuna stochasticity | Best run 57.07%, subsequent runs 56.4-56.5% | Optuna is stochastic — don't assume best run is repeatable |
+| CatBoost without balanced weights | Similar to XGBoost, no draw improvement | Need `auto_class_weights="Balanced"` or custom loss |
+| Halftime retrain | 60.9% vs 60.6% deployed, marginal gain | Walk-forward 63.6% suggests promise, but held-out gain too small to deploy |
+
+### TESTING PROTOCOL — REQUIRED BEFORE DEPLOYING ANY NEW MODEL
+
+1. Must beat **57.07%** on held-out test set (80/20 chronological split)
+2. Must have walk-forward mean accuracy **> 54%**
+3. Must not increase home bias (check H recall stays **below 85%**)
+4. Run at least **3 Optuna trials**, take the best
+5. Compare RPS score (lower is better, target **< 0.195**)
+6. Check draw recall — any improvement over 1.57% is a bonus
+7. Update `validation.json`, `results.json`, and `CHANGELOG.md` before pushing
 
 ---
 
@@ -75,6 +128,8 @@ Flask web app deployed on Railway that predicts EPL match outcomes using XGBoost
 - Fixed validation.json accuracy source (now reads from file, not recalculated)
 - Created retrain_halftime.py pipeline
 - Fixed halftime merge (date+team join keys instead of index alignment)
+- Fixed halftime endpoint 500 error (feat_dict missing 16 features)
+- Created CatBoost vs XGBoost vs LightGBM experiment script
 
 ### Agent 4 — `benchmarking` (not started)
 **Goal:** Value betting / Odds API integration
@@ -108,11 +163,13 @@ These features are computed at prediction time but NOT yet in the trained model'
 
 ## Next Session Priorities
 
-1. **A4:** Value betting / Odds API integration (not started)
-2. **A3:** Try CatBoost and LightGBM as alternatives to XGBoost
-3. **A3:** Halftime retrain with draw-weighted objective (address 1.57% draw recall)
-4. **A5:** Run `benchmarks/compare.py` in Colab for authoritative RPS benchmarks
-5. **A3:** Include dormant features (rest, momentum, H2H, injuries) in next retrain
+1. **A3:** Bookmaker odds features (Tier 1 #1) — biggest expected accuracy gain
+2. **A3:** xG from Understat (Tier 1 #2)
+3. **A3:** Ensemble stacking with CatBoost/LightGBM results (Tier 1 #3)
+4. **A4:** Value betting / Odds API integration (not started)
+5. **A3:** Halftime retrain with draw-weighted objective (address 1.57% draw recall)
+6. **A5:** Run `benchmarks/compare.py` in Colab for authoritative RPS benchmarks
+7. **A3:** Include dormant features (rest, momentum, H2H, injuries) in next retrain
 
 ---
 
@@ -136,3 +193,4 @@ These features are computed at prediction time but NOT yet in the trained model'
 - The halftime model (`xgb_halftime.pkl`) and champion model (`xgb_champion.pkl`) are independent — changes to one do not require retraining the other
 - Before any data pipeline change, verify that hist_matches.csv and hist_features.csv stay in sync (same row count and date alignment)
 - validation.json is the source of truth for displayed accuracy — app.py reads VALIDATED_ACCURACY from it at startup
+- Follow the Testing Protocol before deploying any new model (see Model Improvement Roadmap)
