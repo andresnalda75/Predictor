@@ -114,14 +114,27 @@ def get_form(team, n=5, home_only=False, away_only=False):
     if home_only: tm = tm[tm["home_team"]==team]
     if away_only: tm = tm[tm["away_team"]==team]
     tm = tm.tail(n)
-    pts,gf,ga,wins,draws = 0,0,0,0,0
-    for _,r in tm.iterrows():
+    count = len(tm)
+    if count == 0: return 0,0,0,0,0
+    # Exponential decay: most recent = 1.0, oldest of n = 0.5
+    decay = 0.5 ** (1.0 / (n - 1)) if n > 1 else 1.0
+    pts,gf,ga,wins,draws = 0.0,0.0,0.0,0.0,0.0
+    w_sum = 0.0
+    for j, (_, r) in enumerate(tm.iterrows()):
+        w = decay ** (count - 1 - j)  # j=0 oldest, j=count-1 newest (w=1.0)
+        w_sum += w
         ih = r["home_team"]==team
-        gf += r["home_goals"] if ih else r["away_goals"]
-        ga += r["away_goals"] if ih else r["home_goals"]
-        if (ih and r["result"]=="H") or (not ih and r["result"]=="A"): pts+=3; wins+=1
-        elif r["result"]=="D": pts+=1; draws+=1
-    return pts,gf,ga,wins,draws
+        g_for  = r["home_goals"] if ih else r["away_goals"]
+        g_agt  = r["away_goals"] if ih else r["home_goals"]
+        gf += w * g_for
+        ga += w * g_agt
+        if (ih and r["result"]=="H") or (not ih and r["result"]=="A"):
+            pts += w * 3; wins += w
+        elif r["result"]=="D":
+            pts += w; draws += w
+    # Normalize so scale matches unweighted sum (0-15 for pts, etc.)
+    scale = count / w_sum
+    return pts*scale, gf*scale, ga*scale, wins*scale, draws*scale
 
 def get_standing(team):
     s = standings_cache.get(team)
