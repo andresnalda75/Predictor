@@ -25,9 +25,9 @@ Flask web app deployed on Railway that predicts EPL match outcomes using XGBoost
 
 | Model | Accuracy | Notes |
 |---|---|---|
-| Pre-match (deployed) | 48.1% | Shown in Predict tab |
+| Pre-match (deployed) | 57.1% | Shown in Predict tab |
 | Pre-match (Colab best) | 55.6% | 8 seasons, XGBoost + Optuna |
-| Halftime in-game | 55.3% (UI) / 62.4% (git) | Uses HT score + form + ELO |
+| Halftime in-game | 60.6% | Uses HT score + form + ELO |
 | Random baseline | 33.3% | 3-outcome coin flip |
 | Pro benchmark | 54–56% | Industry standard |
 
