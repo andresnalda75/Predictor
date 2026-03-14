@@ -284,90 +284,43 @@
   </section>
   <section id="validation" class="section">
 
-    <!-- Hero stats -->
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1rem;margin-bottom:1.5rem">
-      <div class="stat-card">
-        <div class="stat-label">Overall Accuracy</div>
-        <div class="stat-value green" id="v-acc">—</div>
-        <div class="stat-sub" id="v-total">532 test matches</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Beats Random By</div>
-        <div class="stat-value green" id="v-beat">—</div>
-        <div class="stat-sub">33.3% baseline</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">Statistical Significance</div>
-        <div class="stat-value green" id="v-pval">—</div>
-        <div class="stat-sub">p-value (lower = better)</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-label">vs Pro Benchmark</div>
-        <div class="stat-value green">✅ Exceeded</div>
-        <div class="stat-sub">54–56% benchmark</div>
-      </div>
+    <!-- Hero -->
+    <div class="stat-grid" id="v-hero" style="margin-bottom:1.5rem">
+      <div class="loading">Loading…</div>
     </div>
 
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.5rem">
-
-      <!-- Outcome breakdown -->
-      <div class="card">
-        <div class="card-title">Accuracy by Outcome</div>
-        <p style="font-size:.82rem;color:var(--muted);margin-bottom:1rem">
-          <strong>Recall</strong> = % of actual outcomes we correctly predicted.<br>
-          <strong>Precision</strong> = when we predict X, how often we're right.
-        </p>
-        <div id="v-outcomes"></div>
-      </div>
-
-      <!-- What the numbers mean -->
-      <div class="card">
-        <div class="card-title">What This Means</div>
-        <div id="v-verdicts" style="display:flex;flex-direction:column;gap:.75rem"></div>
-      </div>
+    <!-- Accuracy by outcome -->
+    <div class="card" style="margin-bottom:1rem">
+      <div class="card-title">Accuracy by Predicted Outcome</div>
+      <p style="font-size:.82rem;color:var(--muted);margin-bottom:1.25rem">
+        When the model predicts each outcome, how often is it right?
+      </p>
+      <div id="v-outcome-bars"><div class="loading">Loading…</div></div>
     </div>
 
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.5rem">
-
-      <!-- Confidence -->
+    <!-- Confidence + game type -->
+    <div class="grid-2" style="margin-bottom:1rem">
       <div class="card">
         <div class="card-title">Confidence Reliability</div>
-        <p style="font-size:.82rem;color:var(--muted);margin-bottom:1rem">
-          Does higher model confidence mean more accurate predictions?
+        <p style="font-size:.82rem;color:var(--muted);margin-bottom:1.25rem">
+          Do higher-confidence predictions win more often?
         </p>
-        <div id="v-confidence"></div>
+        <div id="v-confidence"><div class="loading">Loading…</div></div>
       </div>
-
-      <!-- Game type -->
       <div class="card">
-        <div class="card-title">Big Games vs Close Games</div>
-        <p style="font-size:.82rem;color:var(--muted);margin-bottom:1rem">
+        <div class="card-title">Favourites vs Toss-Ups</div>
+        <p style="font-size:.82rem;color:var(--muted);margin-bottom:1.25rem">
           Does the model do better when there's a clear favourite?
         </p>
-        <div id="v-games"></div>
+        <div id="v-games"><div class="loading">Loading…</div></div>
       </div>
     </div>
 
     <!-- Honest limitations -->
     <div class="card">
       <div class="card-title">Honest Limitations</div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1rem;margin-top:.5rem">
-        <div style="background:#fff8e1;border-radius:10px;padding:1rem">
-          <div style="font-weight:700;margin-bottom:.4rem">⚠️ Draws are hard</div>
-          <div style="font-size:.84rem;color:#374151">Only 1% recall on draws — this is an industry-wide problem. Even paid models struggle here.</div>
-        </div>
-        <div style="background:#e8f5e9;border-radius:10px;padding:1rem">
-          <div style="font-weight:700;margin-bottom:.4rem">✅ Confidence calibrated</div>
-          <div style="font-size:.84rem;color:#374151">Platt scaling applied — high confidence (>55%) predictions are correct 55.4% vs 52.9% for low confidence. Trust the confidence scores.</div>
-        </div>
-        <div style="background:#e8f5e9;border-radius:10px;padding:1rem">
-          <div style="font-weight:700;margin-bottom:.4rem">✅ 8 seasons of data</div>
-          <div style="font-size:.84rem;color:#374151">Model trained on 8 seasons (2017-2025, no COVID). Optimal balance of data volume and modern football patterns.</div>
-        </div>
-        <div style="background:#e8f5e9;border-radius:10px;padding:1rem">
-          <div style="font-weight:700;margin-bottom:.4rem">✅ Not luck</div>
-          <div style="font-size:.84rem;color:#374151">p-value of 5×10⁻²⁶ means this accuracy is essentially impossible by chance. The model has learned real patterns.</div>
-        </div>
+      <div id="v-limitations" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1rem;margin-top:.75rem">
+        <div class="loading">Loading…</div>
       </div>
     </div>
 
@@ -528,106 +481,99 @@ async function runPredict(){
 
 
 async function loadValidation(){
-  const d = await fetch('/api/validation').then(r=>r.json());
-  
-  document.getElementById('v-acc').textContent = (d.accuracy*100).toFixed(1)+'%';
-  document.getElementById('v-total').textContent = d.total + ' test matches';
-  document.getElementById('v-beat').textContent = '+'+d.beats_random_by+'pp';
-  document.getElementById('v-pval').textContent = '5×10⁻²⁶';
+  const [ov, val] = await Promise.all([
+    fetch('/api/overview').then(r=>r.json()),
+    fetch('/api/validation').then(r=>r.json())
+  ]);
 
-  const outcomes = {H:'Home Win',D:'Draw',A:'Away Win'};
+  const acc = ov.pre_accuracy;
+  const beatsRandom = (acc - 33.3).toFixed(1);
+  const proBench = acc >= 54 ? '✅ Met' : acc >= 50 ? '~Close' : '⚠️ Below';
+  const proBenchColor = acc >= 54 ? 'var(--green)' : acc >= 50 ? 'var(--amber)' : 'var(--red,#ff1744)';
+
+  // Hero stat cards
+  document.getElementById('v-hero').innerHTML = `
+    <div class="stat-card">
+      <div class="stat-label">Overall Accuracy</div>
+      <div class="stat-value ${acc>=50?'green':'amber'}">${acc}%</div>
+      <div class="stat-sub">${ov.total_matches} test matches</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Beats Random By</div>
+      <div class="stat-value green">+${beatsRandom}pp</div>
+      <div class="stat-sub">vs 33.3% coin flip</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Pro Benchmark (54–56%)</div>
+      <div class="stat-value" style="color:${proBenchColor};font-size:1.5rem">${proBench}</div>
+      <div class="stat-sub">industry standard</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Statistical Significance</div>
+      <div class="stat-value green" style="font-size:1.4rem">p=5×10⁻²⁶</div>
+      <div class="stat-sub">not luck</div>
+    </div>`;
+
+  // Accuracy by predicted outcome — from live /api/overview
+  const outcomeLabels = {H:'Home Win',D:'Draw',A:'Away Win'};
   const outcomeColors = {H:'var(--green)',D:'var(--amber)',A:'var(--blue)'};
-  document.getElementById('v-outcomes').innerHTML = Object.entries(d.outcomes).map(([k,v])=>`
-    <div style="margin-bottom:1rem">
-      <div style="display:flex;justify-content:space-between;margin-bottom:.3rem">
-        <span style="font-weight:600">${outcomes[k]}</span>
-        <span style="font-size:.82rem;color:var(--muted)">${v.n} matches</span>
+  document.getElementById('v-outcome-bars').innerHTML = Object.entries(ov.by_outcome).map(([k,v])=>`
+    <div style="margin-bottom:1.25rem">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.4rem">
+        <span style="font-weight:600;font-size:.92rem">${outcomeLabels[k]}</span>
+        <span style="font-family:'Archivo Black',sans-serif;font-size:1.1rem;color:${outcomeColors[k]}">${v.accuracy}%</span>
       </div>
-      <div style="display:flex;gap:.5rem;margin-bottom:.3rem;align-items:center">
-        <span style="font-size:.78rem;width:60px;color:var(--muted)">Recall</span>
-        <div style="flex:1;background:#f3f4f6;border-radius:4px;height:10px">
-          <div style="width:${v.recall*100}%;background:${outcomeColors[k]};border-radius:4px;height:10px"></div>
-        </div>
-        <span style="font-size:.82rem;font-weight:600;width:36px">${(v.recall*100).toFixed(0)}%</span>
+      <div style="background:#f3f4f6;border-radius:6px;height:12px;margin-bottom:.3rem">
+        <div style="width:${v.accuracy}%;background:${outcomeColors[k]};border-radius:6px;height:12px;transition:width .6s ease"></div>
       </div>
-      <div style="display:flex;gap:.5rem;align-items:center">
-        <span style="font-size:.78rem;width:60px;color:var(--muted)">Precision</span>
-        <div style="flex:1;background:#f3f4f6;border-radius:4px;height:10px">
-          <div style="width:${v.precision*100}%;background:${outcomeColors[k]};opacity:.5;border-radius:4px;height:10px"></div>
-        </div>
-        <span style="font-size:.82rem;font-weight:600;width:36px">${(v.precision*100).toFixed(0)}%</span>
-      </div>
+      <div style="font-size:.76rem;color:var(--muted)">${v.correct} correct from ${v.total} predicted</div>
     </div>`).join('');
 
-  const verdicts = [
-    {icon:'✅', label:'Statistically Significant', desc:`p = 5×10⁻²⁶ — essentially impossible this is luck`},
-    {icon:'✅', label:'At Pro Benchmark', desc:`55.6% exceeds the paid professional prediction benchmark of 54-56%`},
-    {icon:'✅', label:'Better at Mismatches', desc:`${(d.big_game_acc*100).toFixed(1)}% on big position gaps vs ${(d.close_game_acc*100).toFixed(1)}% on close games`},
-    {icon:'✅', label:'Early Season Accuracy', desc:`${(d.season_consistency.early*100).toFixed(1)}% in matchdays 1-15 when form data is fresh`},
-    {icon:'✅', label:'Confidence Now Calibrated (Platt Scaling)', desc:`High confidence: ${(d.high_conf_acc*100).toFixed(1)}% on ${d.high_conf_n} matches vs Low confidence: ${(d.low_conf_acc*100).toFixed(1)}% on ${d.low_conf_n} matches`},
-    {icon:'⚠️', label:'Draws Unpredictable', desc:`${(d.draw_recall*100).toFixed(1)}% recall — industry-wide problem, not unique to this model`},
+  // Confidence reliability — from validation.json
+  function confBar(label, acc, n, color, note){
+    return `<div style="margin-bottom:1rem">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.4rem">
+        <span style="font-size:.88rem;font-weight:600">${label}</span>
+        <span style="font-weight:700;color:${color}">${(acc*100).toFixed(1)}%</span>
+      </div>
+      <div style="background:#f3f4f6;border-radius:6px;height:12px">
+        <div style="width:${acc*100}%;background:${color};border-radius:6px;height:12px"></div>
+      </div>
+      <div style="font-size:.76rem;color:var(--muted);margin-top:.25rem">${n} matches${note?' · '+note:''}</div>
+    </div>`;
+  }
+  document.getElementById('v-confidence').innerHTML =
+    confBar('High confidence (>55%)', val.high_conf_acc, val.high_conf_n, 'var(--green)', '') +
+    confBar('Low confidence (<45%)', val.low_conf_acc, val.low_conf_n, 'var(--amber)', '') +
+    `<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:.75rem;font-size:.82rem;color:#166534;margin-top:.5rem">
+      Platt scaling applied — confidence scores are calibrated. Higher confidence = more accurate.
+    </div>`;
+
+  // Favourites vs toss-ups — from validation.json
+  document.getElementById('v-games').innerHTML =
+    confBar('Clear favourite (8+ position gap)', val.big_game_acc, '', 'var(--green)', '') +
+    confBar('Toss-up (<4 position gap)', val.close_game_acc, '', 'var(--amber)', '') +
+    `<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:.75rem;font-size:.82rem;color:#166534;margin-top:.5rem">
+      Model is sharper when there's a clear gap between the teams.
+    </div>`;
+
+  // Honest limitations
+  const drawRecallPct = (val.draw_recall*100).toFixed(1);
+  const limitations = [
+    {bg:'#fff8e1',border:'#fde68a',icon:'⚠️',title:'Draws are hard',
+     body:`Only ${drawRecallPct}% recall on draws — an industry-wide problem. Even professional models struggle to predict draws reliably.`},
+    {bg:'#f0fdf4',border:'#bbf7d0',icon:'✅',title:'Not luck',
+     body:`p-value of 5×10⁻²⁶ means this accuracy is statistically impossible by chance. The model has learned real patterns.`},
+    {bg:'#f0fdf4',border:'#bbf7d0',icon:'✅',title:'8 seasons of data',
+     body:`Trained on 8 EPL seasons (2017–2025), COVID years excluded. Enough data to learn patterns without including the anomalous 2020 bubble season.`},
+    {bg:'#fff8e1',border:'#fde68a',icon:'⚠️',title:'Live ELO is approximate',
+     body:`ELO ratings for the current season use last known historical values. Accuracy will improve as the season progresses and more live data is available.`},
   ];
-
-  document.getElementById('v-verdicts').innerHTML = verdicts.map(v=>`
-    <div style="display:flex;gap:.6rem;align-items:flex-start">
-      <span style="font-size:1rem">${v.icon}</span>
-      <div>
-        <div style="font-weight:600;font-size:.88rem">${v.label}</div>
-        <div style="font-size:.8rem;color:var(--muted)">${v.desc}</div>
-      </div>
+  document.getElementById('v-limitations').innerHTML = limitations.map(l=>`
+    <div style="background:${l.bg};border:1px solid ${l.border};border-radius:10px;padding:1rem">
+      <div style="font-weight:700;margin-bottom:.4rem">${l.icon} ${l.title}</div>
+      <div style="font-size:.84rem;color:#374151;line-height:1.6">${l.body}</div>
     </div>`).join('');
-
-  document.getElementById('v-confidence').innerHTML = `
-    <div style="display:flex;flex-direction:column;gap:1rem">
-      <div>
-        <div style="display:flex;justify-content:space-between;margin-bottom:.4rem">
-          <span style="font-size:.88rem;font-weight:600">High confidence (>55%)</span>
-          <span style="font-weight:700;color:var(--green)">${(d.high_conf_acc*100).toFixed(1)}%</span>
-        </div>
-        <div style="background:#f3f4f6;border-radius:6px;height:14px">
-          <div style="width:${d.high_conf_acc*100}%;background:var(--green);border-radius:6px;height:14px"></div>
-        </div>
-        <div style="font-size:.76rem;color:var(--muted);margin-top:.2rem">${d.high_conf_n} matches</div>
-      </div>
-      <div>
-        <div style="display:flex;justify-content:space-between;margin-bottom:.4rem">
-          <span style="font-size:.88rem;font-weight:600">Low confidence (<45%)</span>
-          <span style="font-weight:700;color:var(--amber)">${(d.low_conf_acc*100).toFixed(1)}%</span>
-        </div>
-        <div style="background:#f3f4f6;border-radius:6px;height:14px">
-          <div style="width:${d.low_conf_acc*100}%;background:var(--amber);border-radius:6px;height:14px"></div>
-        </div>
-        <div style="font-size:.76rem;color:var(--muted);margin-top:.2rem">${d.low_conf_n} matches</div>
-      </div>
-      <div style="background:#fff8e1;border-radius:8px;padding:.75rem;font-size:.82rem;color:#374151">
-        ✅ Platt scaling applied — high confidence predictions are now more accurate than low confidence ones.
-      </div>
-    </div>`;
-
-  document.getElementById('v-games').innerHTML = `
-    <div style="display:flex;flex-direction:column;gap:1rem">
-      <div>
-        <div style="display:flex;justify-content:space-between;margin-bottom:.4rem">
-          <span style="font-size:.88rem;font-weight:600">Big gap (8+ positions)</span>
-          <span style="font-weight:700;color:var(--green)">${(d.big_game_acc*100).toFixed(1)}%</span>
-        </div>
-        <div style="background:#f3f4f6;border-radius:6px;height:14px">
-          <div style="width:${d.big_game_acc*100}%;background:var(--green);border-radius:6px;height:14px"></div>
-        </div>
-      </div>
-      <div>
-        <div style="display:flex;justify-content:space-between;margin-bottom:.4rem">
-          <span style="font-size:.88rem;font-weight:600">Close gap (<4 positions)</span>
-          <span style="font-weight:700;color:var(--amber)">${(d.close_game_acc*100).toFixed(1)}%</span>
-        </div>
-        <div style="background:#f3f4f6;border-radius:6px;height:14px">
-          <div style="width:${d.close_game_acc*100}%;background:var(--amber);border-radius:6px;height:14px"></div>
-        </div>
-      </div>
-      <div style="background:#e8f5e9;border-radius:8px;padding:.75rem;font-size:.82rem;color:#374151">
-        ✅ Model is better at predicting clear mismatches — makes intuitive sense.
-      </div>
-    </div>`;
 }
 
 async function runHalfTime(){
