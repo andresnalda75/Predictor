@@ -101,6 +101,27 @@
   .conf-acc.good{color:var(--green);}.conf-acc.ok{color:var(--amber);}.conf-acc.poor{color:var(--red);}
   .conf-sub{font-size:.78rem;color:var(--muted);margin-top:.25rem;}
   .loading{text-align:center;padding:3rem;color:var(--muted);font-size:.9rem;}
+  .matchday-block{margin-bottom:2rem;}
+  .matchday-title{font-family:'Archivo Black',sans-serif;font-size:.85rem;
+    letter-spacing:.1em;text-transform:uppercase;color:var(--epl);
+    background:var(--epl);color:white;padding:.5rem 1rem;border-radius:8px;
+    margin-bottom:.75rem;display:inline-block;}
+  .fixture-row{display:flex;align-items:center;padding:.8rem 1rem;
+    border:1px solid var(--border);border-radius:10px;margin-bottom:.5rem;
+    background:white;gap:1rem;flex-wrap:wrap;}
+  .fixture-row:hover{box-shadow:0 2px 8px rgba(0,0,0,.08);}
+  .fixture-date{font-size:.78rem;color:var(--muted);width:80px;flex-shrink:0;}
+  .fixture-teams{flex:1;font-weight:600;font-size:.95rem;min-width:200px;}
+  .fixture-teams span{color:var(--muted);font-weight:400;margin:0 .4rem;}
+  .fixture-pred{font-family:'Archivo Black',sans-serif;font-size:.9rem;
+    padding:.25rem .7rem;border-radius:99px;color:white;flex-shrink:0;}
+  .fixture-pred.H{background:var(--green);}
+  .fixture-pred.D{background:var(--amber);color:var(--ink);}
+  .fixture-pred.A{background:var(--blue);}
+  .fixture-conf{font-size:.82rem;color:var(--muted);flex-shrink:0;}
+  .fixture-probs{display:flex;gap:.5rem;font-size:.78rem;flex-shrink:0;}
+  .fixture-probs span{padding:.15rem .5rem;border-radius:99px;background:#f3f4f6;}
+  .fixtures-filter{display:flex;gap:.5rem;margin-bottom:1.5rem;flex-wrap:wrap;}
   .seg-toggle{display:flex;gap:.5rem;margin-bottom:1rem;flex-wrap:wrap;}
   .seg-btn{padding:.35rem .9rem;border-radius:99px;border:1px solid var(--border);
     background:white;font-family:'DM Sans',sans-serif;font-size:.82rem;cursor:pointer;transition:all .15s;}
@@ -118,6 +139,7 @@
     <button class="tab-btn" onclick="showTab('predict',this)">Predict</button>
     <button class="tab-btn" onclick="showTab('halftime',this)">Half Time</button>
     <button class="tab-btn" onclick="showTab('validation',this)">Validation</button>
+    <button class="tab-btn" onclick="showTab('fixtures',this)">Fixtures</button>
   </nav>
 </header>
 <main>
@@ -313,6 +335,17 @@
       </div>
     </div>
 
+  </section>
+
+  <section id="fixtures" class="section">
+    <div class="card">
+      <div class="card-title">Upcoming Fixtures — Predicted Results</div>
+      <div class="fixtures-filter">
+        <button class="seg-btn active" onclick="filterFixtures('all',this)">All Matchdays</button>
+        <button class="seg-btn" onclick="filterFixtures('next',this)">Next Matchday Only</button>
+      </div>
+      <div id="fixtures-container"><div class="loading">Loading predictions…</div></div>
+    </div>
   </section>
 </main>
 <script>
