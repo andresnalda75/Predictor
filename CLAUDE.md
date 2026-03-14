@@ -29,19 +29,19 @@ Flask web app deployed on Railway that predicts EPL match outcomes using XGBoost
 
 | Model | Accuracy | Features | Test Matches | Notes |
 |---|---|---|---|---|
-| Pre-match (deployed) | 57.07% | 36 | 834 | XGBoost + Optuna + Pi-ratings + exp. decay |
+| Pre-match (deployed) | 57.79% | 47 | 834 | XGBoost + Optuna + Pi-ratings + B365 odds + exp. decay |
 | Halftime in-game | 60.6% | 35 | 834 | Uses HT score + form + ELO + Pi-ratings |
 | Random baseline | 33.3% | — | — | 3-outcome coin flip |
 | Pro benchmark | 54–56% | — | — | Industry standard |
 
 **Pre-match model details (retrained 2026-03-14):**
-- RPS: 0.1951 (random ≈ 0.222)
-- Draw recall: 1.57% (critical weakness, draws are 23% of outcomes)
-- High confidence (>=50%): 63.5% accuracy on 499 matches
-- Big game (8+ pos gap): 56.5% on 278 matches
-- Close game (<4 pos gap): 54.8% on 554 matches
-- Walk-forward accuracy: 55.01%
-- Key features: Pi-ratings, ELO, form (exp. decay), league position, shots
+- RPS: 0.1894 (random ≈ 0.222)
+- Draw recall: 0% (critical weakness, draws are 23% of outcomes)
+- High confidence (>=50%): 66.1% accuracy on 487 matches
+- Big game (8+ pos gap): 62.5% on 304 matches
+- Close game (<4 pos gap): 52.6% on 270 matches
+- Walk-forward accuracy: 56.4%
+- Key features: B365 implied odds, Pi-ratings, ELO, form (exp. decay), league position, shots
 
 ---
 
@@ -51,9 +51,9 @@ Flask web app deployed on Railway that predicts EPL match outcomes using XGBoost
 
 | # | Improvement | Data Source | Est. Impact | Status |
 |---|---|---|---|---|
-| 1 | **Bookmaker odds as features** — football-data.co.uk CSV has B365H/B365D/B365A columns. Add implied probability features from odds. | football-data.co.uk (free CSV) | +2-3% accuracy | IN PROGRESS — B365 odds merged into hist_matches.csv, 5 derived features (implied probs, home edge, favourite) added to retrain pipeline. Awaiting retrain. |
+| 1 | **Bookmaker odds as features** — football-data.co.uk CSV has B365H/B365D/B365A columns. Add implied probability features from odds. | football-data.co.uk (free CSV) | +2-3% accuracy | ✅ DONE — 57.07% → 57.79% (+0.72pp). 11 new features from B365 odds (implied probs, home edge, favourite, overround). |
 | 2 | **xG from Understat** — free historical xG for EPL teams. Better than shots on target for measuring chance quality. | understat.com (free, scrape) | +1-2% accuracy | Not started |
-| 3 | **Ensemble voting** — combine XGBoost + CatBoost + LightGBM predictions via meta-learner (stacking). | Internal | +1-2% accuracy | CatBoost experiment running |
+| 3 | **Ensemble voting** — combine XGBoost + CatBoost + LightGBM predictions via meta-learner (stacking). | Internal | +1-2% accuracy | Deprioritised — CatBoost underperformed (52-53% WF), LightGBM cancelled |
 | 4 | **Auto-retrain weekly** — accuracy improves +0.32% per week as season data accumulates. Set up GitHub Action to retrain on schedule. | GitHub Actions | +0.3%/week cumulative | Not started |
 
 ### TIER 2 — MEDIUM IMPACT, MORE WORK
@@ -89,8 +89,8 @@ Flask web app deployed on Railway that predicts EPL match outcomes using XGBoost
 
 ### TESTING PROTOCOL — REQUIRED BEFORE DEPLOYING ANY NEW MODEL
 
-1. Must beat **57.07%** on held-out test set (80/20 chronological split)
-2. Must have walk-forward mean accuracy **> 54%**
+1. Must beat **57.79%** on held-out test set (80/20 chronological split)
+2. Must have walk-forward mean accuracy **> 55%**
 3. Must not increase home bias (check H recall stays **below 85%**)
 4. Run at least **3 Optuna trials**, take the best
 5. Compare RPS score (lower is better, target **< 0.195**)
@@ -120,9 +120,9 @@ Flask web app deployed on Railway that predicts EPL match outcomes using XGBoost
 
 ### Agent 3 — `model-improvements` (this agent)
 **Branch:** `model-improvements`
-**Goal:** Improve model accuracy beyond 57.07%
+**Goal:** Improve model accuracy beyond 57.79%
 **Completed:**
-- Retrained champion model: 55.6% → 57.07% (+1.47pp)
+- Retrained champion model: 55.6% → 57.07% → 57.79% (+2.19pp total)
 - Pi-ratings integrated (pi_home, pi_away, pi_diff)
 - RFE feature selection (41 candidates → 36 selected)
 - Optuna hyperparameter search with walk-forward CV
