@@ -10,8 +10,14 @@ Flask web app deployed on Railway that predicts EPL match outcomes using XGBoost
 - `app.py` — Flask backend, feature engineering, all API routes
 - `templates/index.html` — full frontend (8 tabs, vanilla JS)
 - `live_data.py` — football-data.org integration (results, standings, fixtures)
+- `injury_data.py` — API-Football integration (pre-match injury counts)
+- `scripts/calculate_pi_ratings.py` — Pi-ratings calculation from hist_matches.csv
 - `models/` — xgb_champion, xgb_halftime, cols_champion, cols_halftime, label_encoder
-- `data/` — hist_matches.csv, hist_features.csv, validation.json
+- `data/` — hist_matches.csv, hist_features.csv, validation.json, pi_ratings.csv, pi_team_ratings.csv
+
+**Environment variables:**
+- `FOOTBALL_DATA_API_KEY` — football-data.org API v4 key (match results, standings, fixtures)
+- `APIFOOTBALL_KEY` — API-Football key (injury data). Optional; app degrades gracefully without it. Free tier: 100 req/day. Sign up at api-sports.io
 
 ---
 
@@ -19,9 +25,9 @@ Flask web app deployed on Railway that predicts EPL match outcomes using XGBoost
 
 | Model | Accuracy | Notes |
 |---|---|---|
-| Pre-match (deployed) | 48.1% | Shown in Predict tab |
+| Pre-match (deployed) | 57.1% | Shown in Predict tab |
 | Pre-match (Colab best) | 55.6% | 8 seasons, XGBoost + Optuna |
-| Halftime in-game | 55.3% (UI) / 62.4% (git) | Uses HT score + form + ELO |
+| Halftime in-game | 60.6% | Uses HT score + form + ELO |
 | Random baseline | 33.3% | 3-outcome coin flip |
 | Pro benchmark | 54–56% | Industry standard |
 

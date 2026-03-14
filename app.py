@@ -4,11 +4,59 @@ import numpy as np
 import pickle
 import os
 import json
+import logging
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
+log = logging.getLogger(__name__)
 
 app = Flask(__name__)
 
 import threading, time, os
-os.environ["FOOTBALL_DATA_API_KEY"] = "3966f7fa5a62439e9a84c5ddbc41dae0"  # will use Railway env var in production
+_startup_time = time.time()
+
+# ── TTL cache config ──────────────────────────────────────────────────────────
+_CACHE_TTL = 30 * 60  # 30 minutes
+
+# Standings cache — refreshed lazily on prediction requests when stale
+_standings_lock = threading.Lock()
+_standings_ts   = 0.0   # set to 0 so first call always refreshes
+
+def _refresh_standings():
+    """Re-fetch standings if the cache is older than _CACHE_TTL. Thread-safe."""
+    global standings_cache, _standings_ts
+    if time.time() - _standings_ts < _CACHE_TTL:
+        return
+    with _standings_lock:
+        if time.time() - _standings_ts < _CACHE_TTL:   # double-checked locking
+            return
+        try:
+            standings_cache = fetch_standings()
+            _standings_ts   = time.time()
+            print(f"[cache] standings refreshed ({len(standings_cache)} teams)")
+        except Exception as e:
+            print(f"[cache] standings refresh failed: {e}")
+
+# Fixtures cache — avoid hitting the API on every /api/predict_fixtures call
+_fixtures_cache = None
+_fixtures_ts    = 0.0
+_fixtures_lock  = threading.Lock()
+
+def _get_cached_fixtures():
+    """Return cached upcoming fixtures, re-fetching if stale."""
+    global _fixtures_cache, _fixtures_ts
+    if _fixtures_cache is not None and time.time() - _fixtures_ts < _CACHE_TTL:
+        return _fixtures_cache
+    with _fixtures_lock:
+        if _fixtures_cache is not None and time.time() - _fixtures_ts < _CACHE_TTL:
+            return _fixtures_cache
+        _fixtures_cache = fetch_upcoming()
+        _fixtures_ts    = time.time()
+        print(f"[cache] fixtures refreshed ({len(_fixtures_cache)} upcoming)")
+    return _fixtures_cache
 from live_data import fetch_current_season, fetch_standings, fetch_upcoming, CREST_MAP
 from injury_data import load_injuries, get_injury_count
 
@@ -16,6 +64,7 @@ from injury_data import load_injuries, get_injury_count
 try:
     live_season = fetch_current_season()
     standings_cache = fetch_standings()
+    _standings_ts   = time.time()   # mark cache as fresh
     print(f"✅ Live data loaded: {len(live_season)} matches")
 except Exception as e:
     print(f"⚠️ Live data failed: {e}")
@@ -254,6 +303,16 @@ def get_h2h_record(home, away, n=10):
     draws  = int((matches["result"]=="D").sum())
     return h_wins, draws, a_wins
 
+@app.route("/health")
+def health():
+    return jsonify({
+        "status":          "ok",
+        "uptime_seconds":  int(time.time() - _startup_time),
+        "live_data":       live_season is not None,
+        "standings":       len(standings_cache) > 0,
+        "model":           "xgb_champion",
+    })
+
 @app.route("/")
 def index():
     return render_template("index.html", teams=ALL_TEAMS)
@@ -356,6 +415,7 @@ def api_predict():
     if not home or not away: return jsonify({"error":"Select both teams"})
     if home == away: return jsonify({"error":"Teams must be different"})
 
+    _refresh_standings()
     h_pts,h_gf,h_ga,h_wins,h_draws = get_form(home)
     a_pts,a_gf,a_ga,a_wins,a_draws = get_form(away)
     hh_pts,hh_gf,hh_ga,_,_         = get_form(home, home_only=True)
@@ -407,6 +467,8 @@ def api_predict():
     proba  = xgb_champion.predict_proba(feats)[0]
     labels = le.classes_
     pred   = labels[np.argmax(proba)]
+    conf   = round(float(proba.max()) * 100, 1)
+    log.info("predict: %s vs %s → %s (%.1f%% confidence)", home, away, pred, conf)
     return jsonify({
         "home":home,"away":away,"prediction":pred,
         "probabilities":{l:round(float(p)*100,1) for l,p in zip(labels,proba)},
@@ -476,8 +538,9 @@ def api_validation():
 
 @app.route("/api/predict_fixtures")
 def api_predict_fixtures():
+    _refresh_standings()
     try:
-        fixtures = fetch_upcoming()
+        fixtures = _get_cached_fixtures()
     except Exception as e:
         return jsonify({"error": str(e)})
 
@@ -540,6 +603,8 @@ def api_predict_fixtures():
             pred   = labels[np.argmax(proba)]
             probas = {l:round(float(p)*100,1) for l,p in zip(labels,proba)}
 
+            conf = round(max(probas.values()), 1)
+            log.info("fixture: %s vs %s → %s (%.1f%% confidence)", home, away, pred, conf)
             results.append({
                 "matchday":   fix["matchday"],
                 "date":       fix["date"],
@@ -547,7 +612,7 @@ def api_predict_fixtures():
                 "away":       away,
                 "prediction": pred,
                 "probabilities": probas,
-                "confidence": round(max(probas.values()), 1),
+                "confidence": conf,
                 "home_position": h_pos,
                 "away_position": a_pos,
                 "home_crest": fix.get("home_crest", ""),
