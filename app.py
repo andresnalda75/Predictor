@@ -77,10 +77,14 @@ print(f"✅ Halftime model test accuracy: {ht_accuracy}%")
 # Use most recent season for live predictions - append live API data
 import pandas as pd
 if live_season is not None:
-    live_df = pd.concat([hist_df, live_season], ignore_index=True).drop_duplicates(
-        subset=["date","home_team","away_team"]
-    ).sort_values("date").reset_index(drop=True)
-    print(f"✅ live_df: {len(live_df)} total matches ({len(hist_df)} historical + {len(live_season)} live)")
+    try:
+        live_df = pd.concat([hist_df, live_season], ignore_index=True).drop_duplicates(
+            subset=["date","home_team","away_team"]
+        ).sort_values("date").reset_index(drop=True)
+        print(f"✅ live_df: {len(live_df)} total matches ({len(hist_df)} historical + {len(live_season)} live)")
+    except Exception as e:
+        print(f"⚠️ Failed to merge live data: {e}")
+        live_df = hist_df.copy()
 else:
     live_df = hist_df.copy()
     print("⚠️ Using historical data only")

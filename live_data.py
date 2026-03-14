@@ -68,7 +68,7 @@ def fetch_current_season():
         ag = m["score"]["fullTime"]["away"]
         if hg is None: continue
         rows.append({
-            "date":       pd.to_datetime(m["utcDate"]),
+            "date":       pd.to_datetime(m["utcDate"]).replace(tzinfo=None),
             "home_team":  TEAM_MAP.get(m["homeTeam"]["name"], m["homeTeam"]["name"]),
             "away_team":  TEAM_MAP.get(m["awayTeam"]["name"], m["awayTeam"]["name"]),
             "home_goals": hg,
