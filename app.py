@@ -58,6 +58,26 @@ else:
 
 # Build test set
 hist_model = hist_feat[hist_feat["home_form_pts"]+hist_feat["away_form_pts"]>0].copy()
+
+# Inject Pi-ratings and corners_diff if missing from hist_features.csv
+# (model was retrained with these features; align hist_df rows to hist_model rows)
+missing_cols = [c for c in CHAMPION_COLS if c not in hist_model.columns]
+if missing_cols:
+    hist_df_aligned = hist_df.iloc[-len(hist_model):].reset_index(drop=True)
+    hist_model = hist_model.reset_index(drop=True)
+    if "pi_home" in missing_cols:
+        hist_model["pi_home"] = hist_df_aligned["home_team"].map(
+            lambda t: pi_team_ratings.get(t, {}).get("R_h", 0.0))
+    if "pi_away" in missing_cols:
+        hist_model["pi_away"] = hist_df_aligned["away_team"].map(
+            lambda t: pi_team_ratings.get(t, {}).get("R_a", 0.0))
+    if "pi_diff" in missing_cols:
+        hist_model["pi_diff"] = hist_model["pi_home"] - hist_model["pi_away"]
+    for col in missing_cols:
+        if col not in hist_model.columns:
+            hist_model[col] = 0.0
+    print(f"✅ Injected missing cols into test set: {missing_cols}")
+
 split = int(len(hist_model)*0.8)
 X_test = hist_model[CHAMPION_COLS].iloc[split:]
 pred = xgb_champion.predict(X_test)
