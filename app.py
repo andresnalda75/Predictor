@@ -10,6 +10,7 @@ app = Flask(__name__)
 import threading, time, os
 os.environ["FOOTBALL_DATA_API_KEY"] = "3966f7fa5a62439e9a84c5ddbc41dae0"  # will use Railway env var in production
 from live_data import fetch_current_season, fetch_standings, fetch_upcoming, CREST_MAP
+from injury_data import load_injuries, get_injury_count
 
 # Load live season data
 try:
@@ -20,6 +21,13 @@ except Exception as e:
     print(f"⚠️ Live data failed: {e}")
     live_season = None
     standings_cache = {}
+
+# Load injury data (requires APIFOOTBALL_KEY env var)
+injury_cache = load_injuries()
+if injury_cache:
+    print(f"✅ Injury data loaded: {sum(injury_cache.values())} injuries across {len(injury_cache)} teams")
+else:
+    print("⚠️ Injury data unavailable (set APIFOOTBALL_KEY to enable)")
 
 BASE = os.path.dirname(os.path.abspath(__file__)) if "__file__" in dir() else "/content/epl_dashboard"
 
@@ -383,6 +391,7 @@ def api_predict():
         "home_days_rest":get_days_rest(home),"away_days_rest":get_days_rest(away),
         "home_momentum":get_momentum(home),"away_momentum":get_momentum(away),
         "h2h_home_wins":h2h_hw,"h2h_draws":h2h_d,"h2h_away_wins":h2h_aw,
+        "home_injuries":get_injury_count(home),"away_injuries":get_injury_count(away),
         "home_shots_avg":h_sh,"home_shots_against_avg":h_sha,
         "home_sot_avg":h_sot,"home_sot_against_avg":h_sota,
         "away_shots_avg":a_sh,"away_shots_against_avg":a_sha,
@@ -513,6 +522,7 @@ def api_predict_fixtures():
                 "home_days_rest":get_days_rest(home),"away_days_rest":get_days_rest(away),
                 "home_momentum":get_momentum(home),"away_momentum":get_momentum(away),
                 "h2h_home_wins":h2h_hw,"h2h_draws":h2h_d,"h2h_away_wins":h2h_aw,
+                "home_injuries":get_injury_count(home),"away_injuries":get_injury_count(away),
                 "home_shots_avg":h_sh,"home_shots_against_avg":h_sha,
                 "home_sot_avg":h_sot,"home_sot_against_avg":h_sota,
                 "away_shots_avg":a_sh,"away_shots_against_avg":a_sha,
