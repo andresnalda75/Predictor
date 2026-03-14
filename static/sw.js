@@ -1,19 +1,12 @@
-const CACHE_VERSION = 2;
+const CACHE_VERSION = 3;
 const CACHE_NAME = `epl-predictor-v${CACHE_VERSION}`;
 
-const PRECACHE_URLS = [
-  '/static/manifest.json',
-];
-
-// Install: precache static shell
+// Install: skip waiting to activate immediately
 self.addEventListener('install', event => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => cache.addAll(PRECACHE_URLS))
-  );
   self.skipWaiting();
 });
 
-// Activate: remove old caches (busts cache on version bump)
+// Activate: delete ALL old caches
 self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys().then(keys =>
@@ -23,48 +16,34 @@ self.addEventListener('activate', event => {
   self.clients.claim();
 });
 
-// Fetch strategy:
-//   - Network-first for HTML pages and API calls (always fresh)
-//   - Cache-first for static assets (images, CSS, JS, fonts)
+// Fetch: only cache static assets. Never cache HTML or API responses.
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
 
-  // Never intercept cross-origin requests (fonts, crests, etc.)
   if (url.origin !== location.origin) return;
 
-  const isHTML = event.request.mode === 'navigate'
+  // HTML and API — always go to network, never cache
+  if (event.request.mode === 'navigate'
     || event.request.destination === 'document'
-    || url.pathname === '/';
-  const isAPI = url.pathname.startsWith('/api/');
-
-  // Network-first for HTML pages and API routes
-  if (isHTML || isAPI) {
-    event.respondWith(
-      fetch(event.request)
-        .then(response => {
-          if (response && response.status === 200 && response.type === 'basic') {
-            const toCache = response.clone();
-            caches.open(CACHE_NAME).then(cache => cache.put(event.request, toCache));
-          }
-          return response;
-        })
-        .catch(() => caches.match(event.request))
-    );
+    || url.pathname === '/'
+    || url.pathname.startsWith('/api/')) {
     return;
   }
 
-  // Cache-first for static assets (/static/*)
-  event.respondWith(
-    caches.match(event.request).then(cached => {
-      if (cached) return cached;
-      return fetch(event.request).then(response => {
-        if (!response || response.status !== 200 || response.type !== 'basic') {
+  // Static assets only — cache-first
+  if (url.pathname.startsWith('/static/')) {
+    event.respondWith(
+      caches.match(event.request).then(cached => {
+        if (cached) return cached;
+        return fetch(event.request).then(response => {
+          if (!response || response.status !== 200 || response.type !== 'basic') {
+            return response;
+          }
+          const toCache = response.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(event.request, toCache));
           return response;
-        }
-        const toCache = response.clone();
-        caches.open(CACHE_NAME).then(cache => cache.put(event.request, toCache));
-        return response;
-      });
-    })
-  );
+        });
+      })
+    );
+  }
 });
