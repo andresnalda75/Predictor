@@ -303,6 +303,21 @@ def get_h2h_record(home, away, n=10):
     draws  = int((matches["result"]=="D").sum())
     return h_wins, draws, a_wins
 
+def get_implied_odds(elo_home, elo_away):
+    """Approximate B365-style implied probabilities from ELO ratings.
+    Returns (implied_home, implied_draw, implied_away, home_edge, favourite)."""
+    exp_h = 1 / (1 + 10 ** ((elo_away - elo_home) / 400))
+    # Allocate draw probability — higher when teams are closer in strength
+    elo_gap = abs(elo_home - elo_away)
+    draw_prob = 0.26 * max(0.5, 1 - elo_gap / 600)
+    p_home = exp_h * (1 - draw_prob)
+    p_away = (1 - exp_h) * (1 - draw_prob)
+    p_draw = 1 - p_home - p_away
+    home_edge = p_home - (1.0 / 3)
+    probs = [p_home, p_draw, p_away]
+    favourite = int(np.argmax(probs))  # 0=H, 1=D, 2=A
+    return p_home, p_draw, p_away, home_edge, favourite
+
 @app.route("/health")
 def health():
     return jsonify({
@@ -437,6 +452,9 @@ def api_predict():
     # H2H record
     h2h_hw, h2h_d, h2h_aw = get_h2h_record(home, away)
 
+    # Bookmaker odds (ELO-derived approximation for live predictions)
+    imp_h, imp_d, imp_a, h_edge, fav = get_implied_odds(elo_home, elo_away)
+
     feat_dict = {
         "home_form_pts":h_pts,"home_form_gf":h_gf,"home_form_ga":h_ga,
         "home_form_gd":h_gf-h_ga,"home_form_wins":h_wins,"home_form_draws":h_draws,
@@ -452,6 +470,8 @@ def api_predict():
         "matchday":30,
         "elo_home":elo_home,"elo_away":elo_away,"elo_diff":elo_diff,
         "pi_home":h_pi_rh,"pi_away":a_pi_ra,"pi_diff":h_pi_rh-a_pi_ra,
+        "b365_implied_home":imp_h,"b365_implied_draw":imp_d,"b365_implied_away":imp_a,
+        "b365_home_edge":h_edge,"b365_favourite":fav,
         "home_days_rest":get_days_rest(home),"away_days_rest":get_days_rest(away),
         "home_momentum":get_momentum(home),"away_momentum":get_momentum(away),
         "h2h_home_wins":h2h_hw,"h2h_draws":h2h_d,"h2h_away_wins":h2h_aw,
@@ -589,6 +609,9 @@ def api_predict_fixtures():
             # H2H record
             h2h_hw, h2h_d, h2h_aw = get_h2h_record(home, away)
 
+            # Bookmaker odds (ELO-derived approximation for live predictions)
+            imp_h, imp_d, imp_a, h_edge, fav = get_implied_odds(elo_home, elo_away)
+
             feat_dict = {
                 "home_form_pts":h_pts,"home_form_gf":h_gf,"home_form_ga":h_ga,
                 "home_form_gd":h_gf-h_ga,"home_form_wins":h_wins,"home_form_draws":h_draws,
@@ -604,6 +627,8 @@ def api_predict_fixtures():
                 "matchday":fix["matchday"],
                 "elo_home":elo_home,"elo_away":elo_away,"elo_diff":elo_diff,
                 "pi_home":h_pi_rh,"pi_away":a_pi_ra,"pi_diff":h_pi_rh-a_pi_ra,
+                "b365_implied_home":imp_h,"b365_implied_draw":imp_d,"b365_implied_away":imp_a,
+                "b365_home_edge":h_edge,"b365_favourite":fav,
                 "home_days_rest":get_days_rest(home),"away_days_rest":get_days_rest(away),
                 "home_momentum":get_momentum(home),"away_momentum":get_momentum(away),
                 "h2h_home_wins":h2h_hw,"h2h_draws":h2h_d,"h2h_away_wins":h2h_aw,
