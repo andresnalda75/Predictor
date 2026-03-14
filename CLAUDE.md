@@ -51,7 +51,7 @@ Flask web app deployed on Railway that predicts EPL match outcomes using XGBoost
 
 | # | Improvement | Data Source | Est. Impact | Status |
 |---|---|---|---|---|
-| 1 | **Bookmaker odds as features** — football-data.co.uk CSV has B365H/B365D/B365A columns. Add implied probability features from odds. | football-data.co.uk (free CSV) | +2-3% accuracy | ✅ DONE — 57.07% → 57.79% (+0.72pp). 11 new features from B365 odds (implied probs, home edge, favourite, overround). |
+| 1 | **Bookmaker odds as features** — football-data.co.uk CSV has B365H/B365D/B365A columns. Add implied probability features from odds. | football-data.co.uk (free CSV) | +2-3% accuracy | ✅ DONE — 57.07% → 57.79% (+0.72pp). 11 new features from B365 odds (implied probs, home edge, favourite, overround). **Known limitation:** trained on real B365 historical odds, but live predictions use ELO-derived implied probabilities as a proxy (`get_implied_odds()` in app.py). Live accuracy may be slightly below 57.79%. To fix: implement The Odds API (A4 — value betting) for real pre-match odds. |
 | 2 | **xG from Understat** — free historical xG for EPL teams. Better than shots on target for measuring chance quality. | understat.com (free, scrape) | +1-2% accuracy | Not started |
 | 3 | **Ensemble voting** — combine XGBoost + CatBoost + LightGBM predictions via meta-learner (stacking). | Internal | +1-2% accuracy | Deprioritised — CatBoost underperformed (52-53% WF), LightGBM cancelled |
 | 4 | **Auto-retrain weekly** — accuracy improves +0.32% per week as season data accumulates. Set up GitHub Action to retrain on schedule. | GitHub Actions | +0.3%/week cumulative | Not started |
@@ -96,6 +96,7 @@ Flask web app deployed on Railway that predicts EPL match outcomes using XGBoost
 5. Compare RPS score (lower is better, target **< 0.195**)
 6. Check draw recall — any improvement over 1.57% is a bonus
 7. Update `validation.json`, `results.json`, and `CHANGELOG.md` before pushing
+8. **Odds feature caveat:** the 57.79% holdout was trained on real B365 odds, but live predictions use ELO-derived proxies. Live accuracy will be lower until The Odds API is integrated (A4). When comparing models, note whether odds features used real or proxy values.
 
 ---
 
