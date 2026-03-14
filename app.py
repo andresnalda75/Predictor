@@ -117,7 +117,9 @@ def get_standing(team):
     return 10, 0, 0
 
 def get_rolling_shots(team, n=5):
-    tm = live_df[((live_df["home_team"]==team)|(live_df["away_team"]==team))].tail(n)
+    all_tm = live_df[((live_df["home_team"]==team)|(live_df["away_team"]==team))]
+    # skip current-season rows where shot data is unavailable (zeros from API)
+    tm = all_tm[all_tm["hs"] > 0].tail(n)
     if len(tm)==0: return 0,0,0,0
     sh,sha,sot,sota = 0,0,0,0
     for _,r in tm.iterrows():
