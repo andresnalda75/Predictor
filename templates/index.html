@@ -139,8 +139,9 @@
     background:white;gap:.6rem;}
   .fixture-row:hover{box-shadow:0 2px 8px rgba(0,0,0,.08);}
   .fixture-date{font-size:.68rem;color:var(--muted);width:70px;flex-shrink:0;}
-  .fixture-teams{flex:1;display:flex;flex-direction:column;gap:.15rem;font-weight:600;font-size:.85rem;}
-  .fixture-team-line{display:flex;align-items:center;}
+  .fixture-teams{flex:1;min-width:0;display:flex;flex-direction:column;gap:.15rem;font-weight:600;font-size:.78rem;}
+  .fixture-team-line{display:flex;align-items:center;white-space:nowrap;overflow:hidden;}
+  .fixture-team-name{overflow:hidden;text-overflow:ellipsis;}
   .fixture-teams span{color:var(--muted);font-weight:400;margin:0 .3rem;}
   .fixture-pred{font-family:'Archivo Black',sans-serif;font-size:.72rem;
     padding:.2rem .5rem;border-radius:99px;color:white;flex-shrink:0;
@@ -154,7 +155,7 @@
   @media(max-width:700px){.fixture-probs{display:none;}}
   .fixtures-filter{display:flex;gap:.5rem;margin-bottom:1.5rem;flex-wrap:wrap;}
   .team-crest{width:16px;height:16px;object-fit:contain;vertical-align:middle;margin-right:3px;}
-  .ha-label{font-size:.62rem;font-weight:700;color:var(--muted);margin-right:2px;vertical-align:middle;}
+  .ha-label{font-size:.62rem;font-weight:700;color:var(--muted);margin-right:2px;vertical-align:middle;width:14px;flex-shrink:0;text-align:center;}
   .seg-toggle{display:flex;gap:.5rem;margin-bottom:1rem;flex-wrap:wrap;}
   .seg-btn{padding:.35rem .9rem;border-radius:99px;border:1px solid var(--border);
     background:white;font-family:'DM Sans',sans-serif;font-size:.82rem;cursor:pointer;transition:all .15s;}
@@ -229,10 +230,10 @@
   @media(max-width:700px){
     .fixture-row{padding:.35rem .5rem;gap:.4rem;margin-bottom:.25rem;border-radius:6px;}
     .fixture-date{width:auto;}
-    .fixture-teams{font-size:.78rem;}
     .fixture-pred{font-size:.7rem;padding:.15rem .45rem;}
     .matchday-block{margin-bottom:.75rem;}
     .matchday-title{font-size:.7rem;padding:.25rem .6rem;margin-bottom:.35rem;}
+    .team-crest{width:14px;height:14px;}
   }
   footer{background:var(--epl);color:rgba(255,255,255,.45);font-size:.75rem;
     text-align:center;padding:.9rem 1rem;letter-spacing:.02em;
@@ -857,7 +858,7 @@ function filterFixtures(mode, btn){
 
 function formDots(form){
   if(!form||!form.length) return '';
-  return `<span class="form-dots">${form.map(r=>`<span class="form-dot ${r}" title="${r}"></span>`).join('')}</span>`;
+  return `<span class="form-dots">${form.slice(0,4).map(r=>`<span class="form-dot ${r}" title="${r}"></span>`).join('')}</span>`;
 }
 
 function renderFixtures(mode){
@@ -885,8 +886,8 @@ function renderFixtures(mode){
       html += `<div class="fixture-row">
         <div class="fixture-date">${f.date}</div>
         <div class="fixture-teams">
-          <div class="fixture-team-line">${homeCrest}<span class="ha-label">H</span>${f.home}${formDots(f.home_form)}</div>
-          <div class="fixture-team-line">${awayCrest}<span class="ha-label">A</span>${f.away}${formDots(f.away_form)}</div>
+          <div class="fixture-team-line">${homeCrest}<span class="ha-label">H</span><span class="fixture-team-name">${f.home}</span>${formDots(f.home_form)}</div>
+          <div class="fixture-team-line">${awayCrest}<span class="ha-label">A</span><span class="fixture-team-name">${f.away}</span>${formDots(f.away_form)}</div>
         </div>
         <div class="fixture-pred ${f.prediction}">${predLabel} <span class="fixture-conf-inline">${f.confidence}%</span></div>
         <div class="fixture-probs">
