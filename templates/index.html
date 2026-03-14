@@ -136,10 +136,11 @@
     margin-bottom:.5rem;display:inline-block;}
   .fixture-row{display:flex;align-items:center;padding:.4rem .75rem;
     border:1px solid var(--border);border-radius:8px;margin-bottom:.35rem;
-    background:white;gap:.6rem;flex-wrap:nowrap;}
+    background:white;gap:.6rem;}
   .fixture-row:hover{box-shadow:0 2px 8px rgba(0,0,0,.08);}
   .fixture-date{font-size:.72rem;color:var(--muted);width:70px;flex-shrink:0;}
-  .fixture-teams{flex:1;font-weight:600;font-size:.85rem;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .fixture-teams{flex:1;display:flex;flex-direction:column;gap:.15rem;font-weight:600;font-size:.85rem;min-width:0;}
+  .fixture-team-line{display:flex;align-items:center;}
   .fixture-teams span{color:var(--muted);font-weight:400;margin:0 .3rem;}
   .fixture-pred{font-family:'Archivo Black',sans-serif;font-size:.78rem;
     padding:.2rem .55rem;border-radius:99px;color:white;flex-shrink:0;}
@@ -153,7 +154,6 @@
   .fixtures-filter{display:flex;gap:.5rem;margin-bottom:1.5rem;flex-wrap:wrap;}
   .team-crest{width:18px;height:18px;object-fit:contain;vertical-align:middle;margin-right:3px;}
   .ha-label{font-size:.62rem;font-weight:700;color:var(--muted);margin-right:2px;vertical-align:middle;}
-  .vs-sep{color:var(--muted);margin:0 .3rem;font-weight:400;}
   .fixture-conf.good{color:var(--green);font-weight:700;}
   .fixture-conf.ok{color:var(--amber);font-weight:700;}
   .fixture-conf.poor{color:var(--muted);}
@@ -888,9 +888,8 @@ function renderFixtures(mode){
       html += `<div class="fixture-row">
         <div class="fixture-date">${f.date}</div>
         <div class="fixture-teams">
-          ${homeCrest}<span class="ha-label">H</span>${f.home}${formDots(f.home_form)}
-          <span class="vs-sep">vs</span>
-          ${formDots(f.away_form)}${awayCrest}<span class="ha-label">A</span>${f.away}
+          <div class="fixture-team-line">${homeCrest}<span class="ha-label">H</span>${f.home}${formDots(f.home_form)}</div>
+          <div class="fixture-team-line">${awayCrest}<span class="ha-label">A</span>${f.away}${formDots(f.away_form)}</div>
         </div>
         <div class="fixture-pred ${f.prediction}">${predLabel}</div>
         <div class="fixture-conf ${confClass}">${f.confidence}%</div>
