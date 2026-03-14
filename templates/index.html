@@ -268,7 +268,7 @@
       </div>
       <div class="hero-support">
         <div class="hero-support-stat">
-          <div class="hero-support-value">+22pp</div>
+          <div class="hero-support-value" id="hero-beat">+22pp</div>
           <div class="hero-support-label">above random<br>baseline (33.3%)</div>
         </div>
         <div class="hero-support-stat">
@@ -529,6 +529,7 @@ async function loadOverview(){
   document.getElementById('about-ht-acc').textContent = d.ing_accuracy+'%';
   document.getElementById('hero-acc').textContent = d.pre_accuracy+'%';
   document.getElementById('hero-ht-acc').textContent = d.ing_accuracy+'%';
+  document.getElementById('hero-beat').textContent = '+' + (d.pre_accuracy - d.random_baseline).toFixed(1) + 'pp';
   document.getElementById('hero-matches').textContent = d.total_matches.toLocaleString();
 }
 
