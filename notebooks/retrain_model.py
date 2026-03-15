@@ -165,6 +165,49 @@ def get_momentum(df_up_to, team, n=3):
     return round(_ppg(recent) - _ppg(older), 3)
 
 
+def get_referee_stats(df_up_to, referee):
+    """Rolling referee stats from all prior matches officiated by this referee.
+    Returns (home_win_rate, cards_per_game, draw_rate)."""
+    if not referee or referee == "Unknown" or "referee" not in df_up_to.columns:
+        return 0.5, 3.0, 0.25  # league averages as fallback
+    ref_matches = df_up_to[df_up_to["referee"] == referee]
+    if len(ref_matches) < 3:
+        return 0.5, 3.0, 0.25
+    n = len(ref_matches)
+    home_wins = (ref_matches["result"] == "H").sum()
+    draws = (ref_matches["result"] == "D").sum()
+    cards = 0
+    for col in ["home_yellows", "home_reds", "away_yellows", "away_reds"]:
+        if col in ref_matches.columns:
+            cards += ref_matches[col].sum()
+    return round(home_wins / n, 3), round(cards / n, 1), round(draws / n, 3)
+
+
+def get_match_stakes(standings, team, n_teams=20):
+    """Calculate match stakes from current standings position.
+    Returns (relegation_gap, title_gap, top4_gap)."""
+    info = standings.get(team, {"position": 10, "pts": 0})
+    pos = info["position"]
+    pts = info["pts"]
+
+    # Find key thresholds
+    all_pts = sorted([s["pts"] for s in standings.values()], reverse=True)
+    if len(all_pts) < 4:
+        return 10, 30, 10  # early season defaults
+
+    leader_pts = all_pts[0]
+    top4_pts = all_pts[3] if len(all_pts) >= 4 else all_pts[-1]
+    # Relegation: 3rd from bottom
+    rel_pos = max(1, len(all_pts) - 2)
+    rel_pts = all_pts[rel_pos - 1] if rel_pos <= len(all_pts) else 0
+
+    relegation_gap = pts - rel_pts  # positive = safe, negative = in danger
+    title_gap = leader_pts - pts  # 0 = leader, positive = behind
+    top4_gap = pts - top4_pts  # positive = in top 4, negative = outside
+
+    return relegation_gap, title_gap, top4_gap
+
+
 def get_cumulative_standing(df_season):
     """Build league table from a season's completed matches."""
     table = {}
@@ -356,6 +399,29 @@ def build_features(matches_df, pi_df, fifa_df=None):
             feat["away_fifa_mid"] = a_fifa["mid"]
             feat["away_fifa_overall"] = a_fifa["overall"]
             feat["fifa_overall_diff"] = round(h_fifa["overall"] - a_fifa["overall"], 1)
+
+        # Referee features (rolling stats from prior matches)
+        ref_name = row.get("referee", "Unknown") if "referee" in matches.columns else "Unknown"
+        ref_home_bias, ref_cards_avg, ref_draw_rate = get_referee_stats(df_before, ref_name)
+        feat["referee_home_bias"] = ref_home_bias
+        feat["referee_cards_avg"] = ref_cards_avg
+        feat["referee_draw_rate"] = ref_draw_rate
+
+        # Match stakes features (derived from current standings)
+        h_rel_gap, h_title_gap, h_top4_gap = get_match_stakes(standings, home)
+        a_rel_gap, a_title_gap, a_top4_gap = get_match_stakes(standings, away)
+        feat["home_relegation_gap"] = h_rel_gap
+        feat["away_relegation_gap"] = a_rel_gap
+        feat["home_title_gap"] = h_title_gap
+        feat["away_title_gap"] = a_title_gap
+        feat["home_top4_gap"] = h_top4_gap
+        feat["away_top4_gap"] = a_top4_gap
+        # Combined importance: higher when both teams are fighting for something
+        feat["match_importance"] = round(
+            max(0, 10 - h_rel_gap) + max(0, 10 - a_rel_gap) +  # relegation battle
+            max(0, 5 - h_title_gap) + max(0, 5 - a_title_gap) +  # title race
+            max(0, 3 + h_top4_gap) + max(0, 3 + a_top4_gap),  # top 4 race
+            1)
 
         feat["result"] = row["result"]
         rows.append(feat)
