@@ -218,3 +218,51 @@ These features are computed at prediction time but NOT yet in the trained model'
 - Before any data pipeline change, verify that hist_matches.csv and hist_features.csv stay in sync (same row count and date alignment)
 - validation.json is the source of truth for displayed accuracy — app.py reads VALIDATED_ACCURACY from it at startup
 - Follow the Testing Protocol before deploying any new model (see Model Improvement Roadmap)
+
+---
+
+## DATA AUDIT & DISCLOSURE PLAN
+
+**Disclosure principle:** Every number shown to users must have a clear answer to: *'accuracy on what data, over how many seasons, for which teams?'* If we can't answer that clearly, we shouldn't show the number. This was flagged by the Reddit community and is critical for credibility before any marketing push.
+
+### AUDIT TASKS
+
+#### 1. Map every stat displayed in the app to its data source
+
+| UI Element | Question | Status |
+|---|---|---|
+| Validation tab stats | Which dataset? Holdout? All 8 seasons? | ❓ Investigate |
+| Team accuracy table | Which dataset? Why does Wolves show ~83 not 300+? | ❓ Investigate |
+| Hero section accuracy numbers | Holdout or walk-forward? | ❓ Investigate |
+| Halftime model stats | Same question — holdout or walk-forward? | ❓ Investigate |
+| Form dots on fixtures | How many games lookback? | ❓ Investigate |
+| ELO ratings | Calculated from which seasons? | ❓ Investigate |
+
+#### 2. Investigate the 3-season discrepancy
+
+- Footer says 'Model accuracy 57.1%' — is this the right number? (Should be 57.79%)
+- Validation tab says 834 matches — confirm this is 20% holdout of 8 seasons
+- Team accuracy table shows ~83 games per team — this suggests only ~2 seasons not 8, why?
+- Leeds shows 7 games — should be ~29 current season + historical EPL games
+
+#### 3. Check data completeness per team
+
+- Which teams have full 8 seasons?
+- Which teams were promoted/relegated and when?
+- Leeds, Ipswich, Sunderland, Burnley, Sheffield United — how many seasons each?
+- Are promoted team predictions less reliable due to limited data?
+
+#### 4. Fix all UI disclosures
+
+| Fix | Description | Status |
+|---|---|---|
+| Dataset source labels | Add dataset source label to every stat | ❌ TODO |
+| Team accuracy table | Add "Seasons" column, sort high→low, add "promoted" badge for <3 seasons | ❌ TODO |
+| Validation tab | Clarify "834 matches = holdout test set from 8 seasons of training data" | ❌ TODO |
+| Hero section | Clarify what the accuracy number represents | ❌ TODO |
+| Methodology footnote | Add a footnote explaining the three datasets (training, holdout, walk-forward) | ❌ TODO |
+
+#### 5. Fix the footer
+
+- Currently shows '57.1%' — should show '57.8%' (from validation.json VALIDATED_ACCURACY)
+- Add tooltip explaining what the accuracy number means
