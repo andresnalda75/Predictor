@@ -105,6 +105,30 @@ def get_rolling_shots(df_up_to, team, n=5):
     return sh / n2, sha / n2, sot / n2, sota / n2
 
 
+def get_rolling_xg(df_up_to, team, n=5):
+    """Rolling n-match average xG for and against a team.
+
+    Returns (xg_for_avg, xg_against_avg) or (None, None) if no xG data.
+    """
+    tm = df_up_to[((df_up_to["home_team"] == team) | (df_up_to["away_team"] == team))]
+    # Only rows that have xG data
+    if "home_xg" not in tm.columns:
+        return None, None
+    tm = tm[tm["home_xg"].notna()].tail(n)
+    if len(tm) == 0:
+        return None, None
+    xg_for, xg_against = 0.0, 0.0
+    for _, r in tm.iterrows():
+        if r["home_team"] == team:
+            xg_for += r["home_xg"]
+            xg_against += r["away_xg"]
+        else:
+            xg_for += r["away_xg"]
+            xg_against += r["home_xg"]
+    count = len(tm)
+    return xg_for / count, xg_against / count
+
+
 def get_cumulative_standing(df_season):
     """Build league table from a season's completed matches."""
     table = {}
@@ -234,6 +258,16 @@ def build_features(matches_df, pi_df):
             "shots_diff": h_sh - a_sh, "sot_diff": h_sot - a_sot,
             "corners_diff": (row.get("hc", 0) or 0) - (row.get("ac", 0) or 0),
         }
+
+        # xG rolling averages (5-game)
+        h_xg, h_xga = get_rolling_xg(df_before, home)
+        a_xg, a_xga = get_rolling_xg(df_before, away)
+        if h_xg is not None and a_xg is not None:
+            feat["home_xg_avg"] = round(h_xg, 3)
+            feat["away_xg_avg"] = round(a_xg, 3)
+            feat["home_xga_avg"] = round(h_xga, 3)
+            feat["away_xga_avg"] = round(a_xga, 3)
+            feat["xg_diff"] = round(h_xg - a_xg, 3)
 
         # Bookmaker odds derived features
         if has_odds and pd.notna(row.get("b365_implied_home")):
