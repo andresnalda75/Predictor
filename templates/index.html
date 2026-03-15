@@ -5,7 +5,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>EPL Predictor</title>
-<meta name="description" content="Predict Premier League match outcomes with machine learning — 57.1% accuracy, above academic SOTA.">
+<meta name="description" content="Predict Premier League match outcomes with machine learning — 57.8% accuracy, above academic SOTA.">
 <meta name="theme-color" content="#38003c">
 <!-- PWA -->
 <link rel="manifest" href="/static/manifest.json">
@@ -293,12 +293,12 @@
         <div class="hero-model">
           <div class="hero-model-type">Pre-Match</div>
           <div class="hero-model-value" id="hero-acc">55.6%</div>
-          <div class="hero-model-desc">Predicted before kick-off using form, ELO &amp; standings</div>
+          <div class="hero-model-desc">Holdout accuracy · form, ELO, odds &amp; standings</div>
         </div>
         <div class="hero-model highlight">
           <div class="hero-model-type">In-Game</div>
           <div class="hero-model-value" id="hero-ht-acc">62.2%</div>
-          <div class="hero-model-desc">Updated at half-time with the score — +3.5pp boost</div>
+          <div class="hero-model-desc">Holdout accuracy · updated at half-time with score</div>
         </div>
       </div>
       <div class="hero-support">
@@ -309,6 +309,7 @@
         <div class="hero-support-stat">
           <div class="hero-support-value" id="hero-matches">532</div>
           <div class="hero-support-label">test matches<br>evaluated</div>
+          <div style="font-size:.65rem;opacity:.45;margin-top:.25rem">holdout set · 8 seasons</div>
         </div>
       </div>
     </div>
@@ -321,6 +322,7 @@
   <section id="teams" class="section">
     <div class="card">
       <div class="card-title">Prediction Accuracy by Team</div>
+      <p style="font-size:.82rem;color:var(--muted);margin-bottom:1rem">Based on holdout test set from 8 seasons of historical data (2017–2025)</p>
       <div class="seg-toggle">
         <button class="seg-btn active" onclick="filterTeams('all',this)">All</button>
         <button class="seg-btn" onclick="filterTeams('good',this)">Above 40%</button>
@@ -328,10 +330,11 @@
       </div>
       <div style="overflow-x:auto">
         <table class="data-table">
-          <thead><tr><th>#</th><th>Team</th><th>Games</th><th>Pre-Match</th><th>In-Game</th><th>Correct</th></tr></thead>
-          <tbody id="teams-tbody"><tr><td colspan="6" class="loading">Loading…</td></tr></tbody>
+          <thead><tr><th>#</th><th>Team</th><th>Seasons</th><th>Games</th><th>Pre-Match</th><th>In-Game</th><th>Correct</th></tr></thead>
+          <tbody id="teams-tbody"><tr><td colspan="7" class="loading">Loading…</td></tr></tbody>
         </table>
       </div>
+      <p style="font-size:.76rem;color:var(--muted);margin-top:.75rem;font-style:italic">* Recently promoted — limited historical data</p>
     </div>
   </section>
   <section id="confidence" class="section">
@@ -375,6 +378,9 @@
       <p style="font-size:.88rem;line-height:1.7;color:#374151">
         Uses the <strong>pre-match model (<span id="about-pre-acc">…</span> accuracy)</strong> trained on 8 seasons of EPL data (2017–2025).
         Features include last-5 form, home/away specific form, current league position and points.
+      </p>
+      <p style="font-size:.78rem;line-height:1.5;color:var(--muted);margin-top:.5rem;font-style:italic">
+        Accuracy measured on held-out test data. Current season predictions use the live trained model.
       </p>
     </div>
   </section>
@@ -420,6 +426,9 @@
         The in-game model uses the half time score alongside team form and league position,
         trained on 8 seasons of EPL data (2017–2025, COVID excluded). It accounts for the high
         rate of second-half turnarounds to predict the final result from any half-time scoreline.
+      </p>
+      <p style="font-size:.78rem;line-height:1.5;color:var(--muted);margin-top:.5rem;font-style:italic">
+        Accuracy measured on held-out test data. Current season predictions use the live trained model.
       </p>
     </div>
   
@@ -512,7 +521,7 @@
   </section>
 </main>
 <footer>
-  EPL Predictor v1.2.0 &nbsp;·&nbsp; Model accuracy 57.1% &nbsp;·&nbsp; Built with <a href="https://claude.ai/claude-code" target="_blank" rel="noopener">Claude Code</a> &nbsp;·&nbsp; March 2026
+  EPL Predictor v1.2.0 &nbsp;·&nbsp; <span title="Accuracy on a 20% chronological holdout test set (834 matches) from 8 EPL seasons (2017–2025). The model never saw these matches during training.">Model accuracy 57.8%</span> &nbsp;·&nbsp; Built with <a href="https://claude.ai/claude-code" target="_blank" rel="noopener">Claude Code</a> &nbsp;·&nbsp; March 2026
 </footer>
 <script>
 let teamsData=[];
@@ -551,10 +560,15 @@ function accPill(acc){
 async function loadOverview(){
   const d=await fetch('/api/overview').then(r=>r.json());
   document.getElementById('overview-stats').innerHTML=`
-    <div class="stat-card"><div class="stat-label">Test Matches</div><div class="stat-value">${d.total_matches}</div><div class="stat-sub">Oct 2025 – Mar 2026</div></div>
-    <div class="stat-card"><div class="stat-label">Pre-Match Accuracy</div><div class="stat-value ${d.pre_accuracy>=45?'green':'amber'}">${d.pre_accuracy}%</div><div class="stat-sub">vs 33.3% random</div></div>
+    <div class="stat-card"><div class="stat-label">Test Matches</div><div class="stat-value">${d.total_matches}</div><div class="stat-sub">20% holdout · 8 seasons</div></div>
+    <div class="stat-card"><div class="stat-label">Pre-Match Accuracy</div><div class="stat-value ${d.pre_accuracy>=45?'green':'amber'}">${d.pre_accuracy}%</div><div class="stat-sub">on held-out test data</div></div>
     <div class="stat-card"><div class="stat-label">In-Game Accuracy</div><div class="stat-value green">${d.ing_accuracy}%</div><div class="stat-sub">with half-time score</div></div>
     <div class="stat-card"><div class="stat-label">Pro Benchmark</div><div class="stat-value amber">54–56%</div><div class="stat-sub">industry standard</div></div>`;
+  // Add methodology footnote below overview stats
+  if(!document.getElementById('overview-methodology')){
+    document.getElementById('overview-stats').insertAdjacentHTML('afterend',
+      '<p id="overview-methodology" style="font-size:.75rem;color:var(--muted);margin:.75rem 0 0;line-height:1.5">Accuracy measured on a chronological 20% holdout set (most recent ~2 seasons) that the model never saw during training. Trained on 8 EPL seasons (2017\u20132025, COVID excluded). Promoted teams with fewer seasons may have less reliable predictions.</p>');
+  }
   const outcomes={'H':'Home Wins','D':'Draws','A':'Away Wins'};
   document.getElementById('outcome-bars').innerHTML=Object.entries(d.by_outcome).map(([k,v])=>`
     <div class="outcome-row">
@@ -589,16 +603,19 @@ async function loadTeams(){
   renderTeams(teamsData);
 }
 
+const PROMOTED_TEAMS=['Leeds United','Ipswich','Sunderland','Burnley','Sheffield United'];
 function renderTeams(data){
-  document.getElementById('teams-tbody').innerHTML=data.map((t,i)=>`
-    <tr>
+  document.getElementById('teams-tbody').innerHTML=data.map((t,i)=>{
+    const promoted=PROMOTED_TEAMS.includes(t.team);
+    return `<tr>
       <td style="color:var(--muted);font-size:.8rem">${i+1}</td>
-      <td style="font-weight:600">${t.team}</td>
+      <td style="font-weight:600">${t.team}${promoted?' *':''}</td>
+      <td>${t.seasons||'—'}</td>
       <td>${t.games}</td>
       <td>${accPill(t.pre_accuracy)}</td>
       <td>${accPill(t.ing_accuracy)}</td>
       <td>${t.correct}</td>
-    </tr>`).join('');
+    </tr>`;}).join('');
 }
 
 function filterTeams(filter,btn){
@@ -687,6 +704,7 @@ async function loadValidation(){
       <div class="stat-label">Overall Accuracy</div>
       <div class="stat-value ${acc>=50?'green':'amber'}">${acc}%</div>
       <div class="stat-sub">${ov.total_matches} test matches</div>
+      <div style="font-size:.7rem;color:var(--muted);margin-top:.25rem">holdout set from 8 seasons (2017–2025)</div>
     </div>
     <div class="stat-card">
       <div class="stat-label">Beats Random By</div>
@@ -703,6 +721,8 @@ async function loadValidation(){
       <div class="stat-value green" style="font-size:1.4rem">p=5×10⁻²⁶</div>
       <div class="stat-sub">not luck</div>
     </div>`;
+  document.getElementById('v-hero').insertAdjacentHTML('afterend',
+    '<p style="font-size:.78rem;color:var(--muted);margin:-0.75rem 0 1.25rem;line-height:1.5">Model trained on earlier seasons, tested on seasons it had not seen. Accuracy measured on held-out test data. Current season predictions use the live trained model.</p>');
 
   // Accuracy by predicted outcome — from live /api/overview
   const outcomeLabels = {H:'Home Win',D:'Draw',A:'Away Win'};

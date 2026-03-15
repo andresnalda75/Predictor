@@ -378,8 +378,12 @@ def api_teams():
     for team in ALL_TEAMS:
         sub = test_df[(test_df["home_team"]==team)|(test_df["away_team"]==team)]
         if len(sub) >= 3:
+            # Count distinct seasons this team appears in (test data)
+            team_matches = hist_df[(hist_df["home_team"]==team)|(hist_df["away_team"]==team)]
+            seasons = int(team_matches["season_code"].nunique()) if len(team_matches) else 0
             rows.append({
                 "team": team,
+                "seasons": seasons,
                 "games": len(sub),
                 "pre_accuracy": round(sub["correct"].mean()*100,1),
                 "ing_accuracy": round(sub["correct"].mean()*100,1),
