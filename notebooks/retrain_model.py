@@ -45,6 +45,7 @@ BENCH_DIR = os.path.join(ROOT, "benchmarks")
 
 HIST_MATCHES = os.path.join(DATA_DIR, "hist_matches.csv")
 PI_RATINGS = os.path.join(DATA_DIR, "pi_ratings.csv")
+FIFA_RATINGS = os.path.join(DATA_DIR, "fifa_ratings.csv")
 HIST_FEATURES = os.path.join(DATA_DIR, "hist_features.csv")
 VALIDATION_JSON = os.path.join(DATA_DIR, "validation.json")
 RESULTS_JSON = os.path.join(BENCH_DIR, "results.json")
@@ -193,14 +194,34 @@ def get_cumulative_standing(df_season):
     return standings
 
 
-def build_features(matches_df, pi_df):
+def build_features(matches_df, pi_df, fifa_df=None):
     """
-    Build feature matrix from raw match data + pi_ratings.
+    Build feature matrix from raw match data + pi_ratings + optional fifa_ratings.
     Processes matches chronologically, using only data available BEFORE each match.
     Returns DataFrame with all features + 'result' column.
     """
     matches = matches_df.sort_values("date").reset_index(drop=True)
     pi = pi_df.sort_values("date").reset_index(drop=True)
+
+    # Build FIFA ratings lookup: (season_code, team) → ratings dict
+    fifa_lookup = {}
+    fifa_season_avg = {}
+    if fifa_df is not None:
+        for _, r in fifa_df.iterrows():
+            fifa_lookup[(int(r["season_code"]), r["team"])] = {
+                "att": r["avg_att"], "def": r["avg_def"],
+                "mid": r["avg_mid"], "overall": r["avg_overall"],
+            }
+        # Pre-compute season averages for promoted teams not in FIFA data
+        for sc in fifa_df["season_code"].unique():
+            sdf = fifa_df[fifa_df["season_code"] == sc]
+            fifa_season_avg[int(sc)] = {
+                "att": round(sdf["avg_att"].mean(), 1),
+                "def": round(sdf["avg_def"].mean(), 1),
+                "mid": round(sdf["avg_mid"].mean(), 1),
+                "overall": round(sdf["avg_overall"].mean(), 1),
+            }
+        print(f"  FIFA ratings: {len(fifa_lookup)} team-seasons loaded")
 
     # Merge pi columns onto matches by index (both sorted by date, same length)
     assert len(matches) == len(pi), f"Row count mismatch: matches={len(matches)}, pi={len(pi)}"
@@ -319,6 +340,22 @@ def build_features(matches_df, pi_df):
             feat["b365_implied_away"] = row["b365_implied_away"]
             feat["b365_home_edge"] = row["b365_home_edge"]
             feat["b365_favourite"] = int(row["b365_favourite"])
+
+        # FIFA ratings (season-level, pre-match knowledge)
+        if fifa_lookup:
+            sc = int(season)
+            fallback = fifa_season_avg.get(sc, {"att": 70, "def": 70, "mid": 70, "overall": 70})
+            h_fifa = fifa_lookup.get((sc, home), fallback)
+            a_fifa = fifa_lookup.get((sc, away), fallback)
+            feat["home_fifa_att"] = h_fifa["att"]
+            feat["home_fifa_def"] = h_fifa["def"]
+            feat["home_fifa_mid"] = h_fifa["mid"]
+            feat["home_fifa_overall"] = h_fifa["overall"]
+            feat["away_fifa_att"] = a_fifa["att"]
+            feat["away_fifa_def"] = a_fifa["def"]
+            feat["away_fifa_mid"] = a_fifa["mid"]
+            feat["away_fifa_overall"] = a_fifa["overall"]
+            feat["fifa_overall_diff"] = round(h_fifa["overall"] - a_fifa["overall"], 1)
 
         feat["result"] = row["result"]
         rows.append(feat)
@@ -775,12 +812,14 @@ def main():
     print("\n1. Loading data...")
     matches = pd.read_csv(HIST_MATCHES, parse_dates=["date"])
     pi = pd.read_csv(PI_RATINGS, parse_dates=["date"])
+    fifa = pd.read_csv(FIFA_RATINGS) if os.path.exists(FIFA_RATINGS) else None
     print(f"   hist_matches.csv: {len(matches)} rows")
     print(f"   pi_ratings.csv:   {len(pi)} rows")
+    print(f"   fifa_ratings.csv: {len(fifa) if fifa is not None else 'NOT FOUND'}")
 
     # ── 2. Build features ─────────────────────────────────────────────────────
     print("\n2. Building features (this takes a few minutes)...")
-    feat_df = build_features(matches, pi)
+    feat_df = build_features(matches, pi, fifa)
 
     # Save updated features
     save_updated_features(feat_df)
