@@ -229,40 +229,42 @@ These features are computed at prediction time but NOT yet in the trained model'
 
 #### 1. Map every stat displayed in the app to its data source
 
-| UI Element | Question | Status |
+| UI Element | Data Source | Answer |
 |---|---|---|
-| Validation tab stats | Which dataset? Holdout? All 8 seasons? | ❓ Investigate |
-| Team accuracy table | Which dataset? Why does Wolves show ~83 not 300+? | ❓ Investigate |
-| Hero section accuracy numbers | Holdout or walk-forward? | ❓ Investigate |
-| Halftime model stats | Same question — holdout or walk-forward? | ❓ Investigate |
-| Form dots on fixtures | How many games lookback? | ❓ Investigate |
-| ELO ratings | Calculated from which seasons? | ❓ Investigate |
+| Validation tab stats | `validation.json` → `/api/validation` | ✅ All from 20% chronological holdout (834 matches, last ~2 seasons of 8) |
+| Team accuracy table | `test_df` (holdout only) → `/api/teams` | ✅ Holdout only — ~83 games/team is correct (834 total ÷ 20 teams ≈ 83). Not a bug. |
+| Hero section accuracy | `VALIDATED_ACCURACY` from `validation.json` → `/api/overview` | ✅ Dynamic, reads holdout accuracy. Now labelled "Holdout accuracy" |
+| Halftime model stats | Calculated at startup: `xgb_halftime` evaluated on same holdout split | ✅ Same 834-match holdout, computed live at app startup |
+| Form dots on fixtures | `get_form_list(team, n=5)` → last 5 matches from `live_df` | ✅ Last 5 matches, no decay. Different from form features (which use exp. decay) |
+| ELO ratings | Pre-computed in `hist_matches.csv` (2014–2025). Live uses last known value, fallback 1500. | ✅ Covers all 8 seasons. Current-season teams default to last known historical ELO. |
 
-#### 2. Investigate the 3-season discrepancy
+#### 2. 3-season discrepancy — RESOLVED
 
-- Footer says 'Model accuracy 57.1%' — is this the right number? (Should be 57.79%)
-- Validation tab says 834 matches — confirm this is 20% holdout of 8 seasons
-- Team accuracy table shows ~83 games per team — this suggests only ~2 seasons not 8, why?
-- Leeds shows 7 games — should be ~29 current season + historical EPL games
+- **Footer**: Was showing hardcoded '57.1%' → ✅ Fixed to '57.8%' (already done in prior commit)
+- **834 matches**: ✅ Confirmed — 20% chronological holdout of 4,166 usable matches (after form filter) = 834 test matches
+- **~83 games per team**: ✅ Not a bug — 834 holdout matches ÷ 20 teams ≈ 83 appearances. Teams appear in both home/away, so each team gets ~83 matches in the holdout
+- **Leeds shows 7 games**: ✅ Correct — Leeds were relegated early in the holdout window, so only 7 of their matches fall in the test period. They have more in training data.
+- **The "3-season" confusion**: The holdout covers ~2 seasons' worth of matches (the most recent 20%). Teams with fewer EPL seasons overall (promoted/relegated) have fewer test matches.
 
-#### 3. Check data completeness per team
+#### 3. Data completeness per team
 
-- Which teams have full 8 seasons?
-- Which teams were promoted/relegated and when?
-- Leeds, Ipswich, Sunderland, Burnley, Sheffield United — how many seasons each?
-- Are promoted team predictions less reliable due to limited data?
+- **Full 8+ seasons**: Arsenal, Chelsea, Everton, Liverpool, Man City, Man Utd, Tottenham, Crystal Palace, West Ham, Brighton, Bournemouth, Southampton, Wolves, Leicester, Newcastle, Burnley
+- **Promoted/relegated**: Leeds (3 EPL seasons in data), Ipswich (1), Luton (1), Nott'm Forest (3), Sheffield United (3), Sunderland (1), Brentford (4)
+- **Reliability**: Teams with <3 seasons in training data have fewer examples for the model to learn from. Flagged with `*` badge in UI.
+- Season counts now use `season_code` column (EPL seasons, not calendar years) for accuracy.
 
-#### 4. Fix all UI disclosures
+#### 4. UI disclosures — DONE
 
 | Fix | Description | Status |
 |---|---|---|
-| Dataset source labels | Add dataset source label to every stat | ❌ TODO |
-| Team accuracy table | Add "Seasons" column, sort high→low, add "promoted" badge for <3 seasons | ❌ TODO |
-| Validation tab | Clarify "834 matches = holdout test set from 8 seasons of training data" | ❌ TODO |
-| Hero section | Clarify what the accuracy number represents | ❌ TODO |
-| Methodology footnote | Add a footnote explaining the three datasets (training, holdout, walk-forward) | ❌ TODO |
+| Dataset source labels | Overview: "20% holdout · 8 seasons", "on held-out test data" | ✅ DONE |
+| Team accuracy table | "Seasons" column present, sorted high→low, `*` promoted badge for limited-data teams | ✅ DONE (was already present, enhanced footnote) |
+| Validation tab | Methodology note explains holdout split, walk-forward, and promoted team caveat | ✅ DONE |
+| Hero section | Model descriptions now say "Holdout accuracy" instead of generic descriptions | ✅ DONE |
+| Methodology footnote | Added to overview tab and validation tab explaining three datasets | ✅ DONE |
+| Teams table footnote | Enhanced to explain what "Games" and "Seasons" columns mean | ✅ DONE |
 
-#### 5. Fix the footer
+#### 5. Footer — DONE
 
-- Currently shows '57.1%' — should show '57.8%' (from validation.json VALIDATED_ACCURACY)
-- Add tooltip explaining what the accuracy number means
+- ✅ Footer already shows '57.8%' (fixed in prior commit)
+- ✅ Added tooltip on hover explaining: "Accuracy on a 20% chronological holdout test set (834 matches) from 8 EPL seasons (2017–2025)"

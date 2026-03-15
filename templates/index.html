@@ -334,7 +334,7 @@
           <tbody id="teams-tbody"><tr><td colspan="7" class="loading">Loading…</td></tr></tbody>
         </table>
       </div>
-      <p style="font-size:.76rem;color:var(--muted);margin-top:.75rem;font-style:italic">* Recently promoted — limited historical data</p>
+      <p style="font-size:.76rem;color:var(--muted);margin-top:.75rem;font-style:italic">* Recently promoted — limited historical data, predictions may be less reliable.<br>Games = matches in the holdout test set (most recent 20% of 8 seasons). Seasons = total EPL seasons in training data.</p>
     </div>
   </section>
   <section id="confidence" class="section">
@@ -722,7 +722,7 @@ async function loadValidation(){
       <div class="stat-sub">not luck</div>
     </div>`;
   document.getElementById('v-hero').insertAdjacentHTML('afterend',
-    '<p style="font-size:.78rem;color:var(--muted);margin:-0.75rem 0 1.25rem;line-height:1.5">Model trained on earlier seasons, tested on seasons it had not seen. Accuracy measured on held-out test data. Current season predictions use the live trained model.</p>');
+    '<p style="font-size:.78rem;color:var(--muted);margin:-0.75rem 0 1.25rem;line-height:1.5"><strong>Methodology:</strong> 8 EPL seasons (2017\u20132025, COVID excluded) split chronologically — 80% training, 20% holdout test. All stats on this page are from the holdout set the model never saw. Walk-forward cross-validation (56.4%) confirms robustness. Promoted teams with &lt;3 seasons may have less reliable predictions.</p>');
 
   // Accuracy by predicted outcome — from live /api/overview
   const outcomeLabels = {H:'Home Win',D:'Draw',A:'Away Win'};
