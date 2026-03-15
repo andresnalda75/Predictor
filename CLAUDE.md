@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-Flask web app deployed on Railway that predicts EPL match outcomes using XGBoost models trained on 8 seasons of historical EPL data (2017–2025, no COVID). Live data is fetched from the football-data.org API v4.
+Flask web app deployed on Railway that predicts EPL match outcomes using XGBoost models trained on 11 seasons of historical EPL data (2014–2025). Live data is fetched from the football-data.org API v4.
 
 **Stack:** Flask · XGBoost · Pandas · Gunicorn · Railway · football-data.org API
 
@@ -30,7 +30,7 @@ Flask web app deployed on Railway that predicts EPL match outcomes using XGBoost
 
 | Model | Accuracy | Features | Test Matches | Notes |
 |---|---|---|---|---|
-| Pre-match (deployed) | 57.79% | 47 | 834 | XGBoost + Optuna + Pi-ratings + B365 odds + exp. decay |
+| Pre-match (deployed) | 57.79% | 47 | 834 | XGBoost + Optuna + Pi-ratings + B365 odds + exp. decay, 11 seasons (2014–2025) |
 | Halftime in-game | 60.6% | 35 | 834 | Uses HT score + form + ELO + Pi-ratings |
 | Random baseline | 33.3% | — | — | 3-outcome coin flip |
 | Pro benchmark | 54–56% | — | — | Industry standard |
@@ -117,6 +117,9 @@ Current draw recall is 0% — the model never predicts draws. This is the single
 | CatBoost with balanced weights | Walk-forward peaked at 52-53%, well below XGBoost 55% | Not worth running again without new features |
 | LightGBM experiment | Cancelled — deprioritised in favour of bookmaker odds features | Odds features expected to have higher impact than algorithm swap |
 | Halftime retrain | 60.9% vs 60.6% deployed, marginal gain | Walk-forward 63.6% suggests promise, but held-out gain too small to deploy |
+| xG alone without odds | 57.67% holdout — did not beat 57.79% champion | xG adds value but not enough to displace B365 odds features alone |
+| COVID exclusion (1920 and/or 2021) | Hurts accuracy −1.2% to −1.5% | Model learns from all data including COVID anomalies; removing seasons shrinks training set. Keep all 11 seasons. |
+| CatBoost balanced class weights | Walk-forward peaked at 52–53% | Well below XGBoost 55% — ruled out without new features |
 
 ### TESTING PROTOCOL — REQUIRED BEFORE DEPLOYING ANY NEW MODEL
 
@@ -198,13 +201,12 @@ These features are computed at prediction time but NOT yet in the trained model'
 
 ## Next Session Priorities
 
-1. **A3:** Bookmaker odds features (Tier 1 #1) — biggest expected accuracy gain
-2. **A3:** xG from Understat (Tier 1 #2)
-3. **A3:** Ensemble stacking with CatBoost/LightGBM results (Tier 1 #3)
-4. **A4:** Value betting / Odds API integration (not started)
-5. **A3:** Halftime retrain with draw-weighted objective (address 1.57% draw recall)
-6. **A5:** Run `benchmarks/compare.py` in Colab for authoritative RPS benchmarks
-7. **A3:** Include dormant features (rest, momentum, H2H, injuries) in next retrain
+1. **A3:** Activate dormant features (`days_rest`, `momentum`) — zero cost, include in next retrain
+2. **A3:** Referee features — already in football-data.co.uk CSV, add to feature set, next retrain
+3. **A3:** Custom draw threshold — 5 lines of code, test immediately after retrain
+4. **A3:** FIFA player ratings — scrape fifaindex.com, aggregate by role (GK/DEF/MID/FWD)
+5. **A3:** GitHub Action — weekly auto-retrain for compound gain
+6. **A4:** Value betting — `ODDS_API_KEY` now available, ready to start
 
 ---
 
@@ -247,7 +249,7 @@ These features are computed at prediction time but NOT yet in the trained model'
 | Hero section accuracy | `VALIDATED_ACCURACY` from `validation.json` → `/api/overview` | ✅ Dynamic, reads holdout accuracy. Now labelled "Holdout accuracy" |
 | Halftime model stats | Calculated at startup: `xgb_halftime` evaluated on same holdout split | ✅ Same 834-match holdout, computed live at app startup |
 | Form dots on fixtures | `get_form_list(team, n=5)` → last 5 matches from `live_df` | ✅ Last 5 matches, no decay. Different from form features (which use exp. decay) |
-| ELO ratings | Pre-computed in `hist_matches.csv` (2014–2025). Live uses last known value, fallback 1500. | ✅ Covers all 8 seasons. Current-season teams default to last known historical ELO. |
+| ELO ratings | Pre-computed in `hist_matches.csv` (2014–2025). Live uses last known value, fallback 1500. | ✅ Covers all 11 seasons. Current-season teams default to last known historical ELO. |
 
 #### 2. 3-season discrepancy — RESOLVED
 
@@ -268,7 +270,7 @@ These features are computed at prediction time but NOT yet in the trained model'
 
 | Fix | Description | Status |
 |---|---|---|
-| Dataset source labels | Overview: "20% holdout · 8 seasons", "on held-out test data" | ✅ DONE |
+| Dataset source labels | Overview: "20% holdout · 11 seasons", "on held-out test data" | ✅ DONE |
 | Team accuracy table | "Seasons" column present, sorted high→low, `*` promoted badge for limited-data teams | ✅ DONE (was already present, enhanced footnote) |
 | Validation tab | Methodology note explains holdout split, walk-forward, and promoted team caveat | ✅ DONE |
 | Hero section | Model descriptions now say "Holdout accuracy" instead of generic descriptions | ✅ DONE |

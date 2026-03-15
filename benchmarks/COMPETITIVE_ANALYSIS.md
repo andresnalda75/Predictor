@@ -166,7 +166,7 @@ These apply across all four competitors — structural problems with the predict
 | "Not designed to be accurate" (their own words) | Accuracy is the core product — published, backtested, benchmarked |
 | 1999 UX, desktop-first | Modern responsive UI, form indicators, fixtures tab |
 | Future-only predictions, no history | Historical accuracy visible in validation tab + results.json |
-| Major leagues only | EPL-focused, but deep: 8 seasons of training data, current live form |
+| Major leagues only | EPL-focused, but deep: 11 seasons of training data, current live form |
 
 **Positioning:** SoccerVista built 26 years of traffic on brand inertia with a product that openly disclaims being accurate. Our product is the opposite: accuracy is the value proposition, and we prove it.
 
@@ -179,7 +179,7 @@ Every competitor shares one fatal flaw: **they ask users to trust them without g
 We are building the opposite:
 - **Validated accuracy**: 55.6% on a 532-match holdout (p < 10⁻²⁵ vs. 33.3% random baseline)
 - **Honest calibration**: Platt-scaled confidence scores; high-confidence picks achieve 65.2%
-- **Open methodology**: XGBoost + Optuna, 8 seasons, features documented
+- **Open methodology**: XGBoost + Optuna, 11 seasons, features documented
 - **Logged track record**: benchmarks/results.json + walk-forward validation in compare.py
 - **Transparent weaknesses**: draw recall is 0.79% — we say so publicly
 
