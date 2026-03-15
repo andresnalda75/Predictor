@@ -492,7 +492,6 @@
       <div class="card-title">Honest Limitations</div>
       <ul style="font-size:.9rem;line-height:1.9;color:#374151;margin:.5rem 0 0 1.25rem">
         <li><strong>0% draw recall</strong> — the model almost never predicts draws. Draws are 23% of EPL outcomes but the model finds it more accurate to predict Home/Away. This is the single biggest weakness.</li>
-        <li><strong>✅ Live odds integrated</strong> — real-time bookmaker odds via The Odds API now power upcoming fixture predictions. ELO proxy only used as fallback.</li>
         <li><strong>Promoted teams have less data</strong> — teams like Ipswich or Sunderland with only 1–2 EPL seasons in our dataset have fewer training examples. Predictions for these teams are less reliable.</li>
         <li><strong>No player-level data</strong> — the model knows team form and strength but not who is playing. A key injury or tactical change is invisible to it.</li>
         <li><strong>Football is inherently unpredictable</strong> — even with perfect data, match outcomes have a ceiling. The difference between 57.8% and a coin flip is meaningful, but it still means 4 in 10 predictions are wrong.</li>
@@ -520,6 +519,9 @@
           <li><strong>Vanilla JS</strong> — no framework, fast and lightweight frontend</li>
         </ul>
       </div>
+    </div>
+    <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:1rem;margin-bottom:1rem;font-size:.88rem;color:#166534;line-height:1.6">
+      ✅ <strong>Live odds integrated</strong> — real-time bookmaker odds via The Odds API now power upcoming fixture predictions. ELO proxy only used as fallback.
     </div>
 
     <div class="card">
