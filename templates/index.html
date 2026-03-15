@@ -258,35 +258,35 @@
 <header>
   <div class="logo">EPL <span>Predictor</span></div>
   <nav class="nav-tabs">
-    <button class="tab-btn active" onclick="showTab('overview',this)">Overview</button>
-    <button class="tab-btn" onclick="showTab('teams',this)">Teams</button>
-    <button class="tab-btn" onclick="showTab('confidence',this)">Confidence</button>
-    <button class="tab-btn" onclick="showTab('h2h',this)">Head to Head</button>
+    <button class="tab-btn active" onclick="showTab('fixtures',this)">Fixtures</button>
     <button class="tab-btn" onclick="showTab('predict',this)">Predict</button>
-    <button class="tab-btn" onclick="showTab('halftime',this)">Half Time</button>
-    <button class="tab-btn" onclick="showTab('validation',this)">Validation</button>
+    <button class="tab-btn" onclick="showTab('validation',this)">Accuracy</button>
+    <button class="tab-btn" onclick="showTab('confidence',this)">Confidence</button>
+    <button class="tab-btn" onclick="showTab('teams',this)">Teams</button>
+    <button class="tab-btn" onclick="showTab('halftime',this)">Live</button>
+    <button class="tab-btn" onclick="showTab('h2h',this)">H2H</button>
+    <button class="tab-btn" onclick="showTab('standings',this)">Table</button>
+    <button class="tab-btn" onclick="showTab('overview',this)">Stats</button>
     <button class="tab-btn" onclick="showTab('about',this)">About</button>
-    <button class="tab-btn" onclick="showTab('fixtures',this)">Fixtures</button>
-    <button class="tab-btn" onclick="showTab('standings',this)">Standings</button>
   </nav>
   <button class="hamburger" id="hamburger" onclick="toggleMenu()" aria-label="Menu">
     <span></span><span></span><span></span>
   </button>
 </header>
 <nav class="mobile-menu" id="mobile-menu">
-  <button class="tab-btn active" onclick="showTab('overview',this)">Overview</button>
-  <button class="tab-btn" onclick="showTab('teams',this)">Teams</button>
-  <button class="tab-btn" onclick="showTab('confidence',this)">Confidence</button>
-  <button class="tab-btn" onclick="showTab('h2h',this)">Head to Head</button>
+  <button class="tab-btn active" onclick="showTab('fixtures',this)">Fixtures</button>
   <button class="tab-btn" onclick="showTab('predict',this)">Predict</button>
-  <button class="tab-btn" onclick="showTab('halftime',this)">Half Time</button>
-  <button class="tab-btn" onclick="showTab('validation',this)">Validation</button>
+  <button class="tab-btn" onclick="showTab('validation',this)">Accuracy</button>
+  <button class="tab-btn" onclick="showTab('confidence',this)">Confidence</button>
+  <button class="tab-btn" onclick="showTab('teams',this)">Teams</button>
+  <button class="tab-btn" onclick="showTab('halftime',this)">Live</button>
+  <button class="tab-btn" onclick="showTab('h2h',this)">H2H</button>
+  <button class="tab-btn" onclick="showTab('standings',this)">Table</button>
+  <button class="tab-btn" onclick="showTab('overview',this)">Stats</button>
   <button class="tab-btn" onclick="showTab('about',this)">About</button>
-  <button class="tab-btn" onclick="showTab('fixtures',this)">Fixtures</button>
-  <button class="tab-btn" onclick="showTab('standings',this)">Standings</button>
 </nav>
 <main>
-  <section id="overview" class="section active">
+  <section id="overview" class="section">
     <div class="hero">
       <div class="hero-tag">Premier League · 2025/26</div>
       <div class="hero-title">EPL <span>Predictor</span></div>
@@ -480,7 +480,7 @@
 
   </section>
 
-  <section id="fixtures" class="section">
+  <section id="fixtures" class="section active">
     <div class="card">
       <div class="card-title">Upcoming Fixtures — Predicted Results</div>
       <div class="fixtures-filter">
@@ -945,6 +945,7 @@ function crestImg(team, size=32){
 
 populateTeamDropdowns();
 loadOverview();
+loadFixtures();
 </script>
 
 <script>
