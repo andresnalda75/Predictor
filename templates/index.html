@@ -129,6 +129,13 @@
   .conf-acc.good{color:var(--green);}.conf-acc.ok{color:var(--amber);}.conf-acc.poor{color:var(--red);}
   .conf-sub{font-size:.78rem;color:var(--muted);margin-top:.25rem;}
   .loading{text-align:center;padding:3rem;color:var(--muted);font-size:.9rem;}
+  @keyframes shimmer{0%{background-position:-400px 0}100%{background-position:400px 0}}
+  .skeleton-row{display:flex;align-items:center;padding:.5rem .5rem;border:1px solid var(--border);border-radius:8px;margin-bottom:.3rem;background:white;gap:.5rem;}
+  .skeleton-bar{border-radius:4px;background:linear-gradient(90deg,#f0f0f0 25%,#e0e0e0 50%,#f0f0f0 75%);background-size:800px 100%;animation:shimmer 1.5s infinite linear;}
+  .fixtures-fade-in{animation:fadeIn .3s ease}
+  @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+  .fixtures-spinner{display:inline-block;width:14px;height:14px;border:2px solid var(--border);border-top-color:var(--epl);border-radius:50%;animation:spin .6s linear infinite;vertical-align:middle;margin-right:.4rem;}
+  @keyframes spin{to{transform:rotate(360deg)}}
   .matchday-block{margin-bottom:.5rem;}
   .matchday-title{font-family:'Archivo Black',sans-serif;font-size:.68rem;
     letter-spacing:.1em;text-transform:uppercase;color:var(--epl);
@@ -491,7 +498,7 @@
         <button class="seg-btn active" onclick="filterFixtures('all',this)">All Matchdays</button>
         <button class="seg-btn" onclick="filterFixtures('next',this)">Next Matchday Only</button>
       </div>
-      <div id="fixtures-container"><div class="loading">Loading predictions…</div></div>
+      <div id="fixtures-container"><div id="fixtures-skeleton"></div></div>
     </div>
   </section>
 
@@ -986,6 +993,25 @@ async function loadStandings(){
   }).join('');
 }
 
+function showFixturesSkeleton(){
+  const el=document.getElementById('fixtures-skeleton');
+  if(!el) return;
+  let html='<div style="text-align:center;padding:.75rem 0;color:var(--muted);font-size:.85rem"><span class="fixtures-spinner"></span>Fetching predictions...</div>';
+  for(let i=0;i<5;i++){
+    html+=`<div class="skeleton-row">
+      <div class="skeleton-bar" style="width:48px;height:12px"></div>
+      <div style="flex:1;display:flex;flex-direction:column;gap:4px">
+        <div class="skeleton-bar" style="width:${60+Math.random()*30}%;height:14px"></div>
+        <div class="skeleton-bar" style="width:${50+Math.random()*30}%;height:14px"></div>
+      </div>
+      <div class="skeleton-bar" style="width:70px;height:26px;border-radius:99px"></div>
+      <div class="skeleton-bar" style="width:90px;height:14px"></div>
+    </div>`;
+  }
+  el.innerHTML=html;
+}
+showFixturesSkeleton();
+
 async function loadFixtures(){
   const res = await fetch('/api/predict_fixtures');
   const data = await res.json();
@@ -994,6 +1020,8 @@ async function loadFixtures(){
     return;
   }
   window._fixturesData = data;
+  const container = document.getElementById('fixtures-container');
+  container.classList.add('fixtures-fade-in');
   renderFixtures('all');
 }
 
