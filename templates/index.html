@@ -730,7 +730,7 @@ async function loadPerformance(){
       <div style="background:#f3f4f6;border-radius:6px;height:12px;margin-bottom:.3rem">
         <div style="width:${v.accuracy}%;background:${outcomeColors[k]};border-radius:6px;height:12px;transition:width .6s ease"></div>
       </div>
-      <div style="font-size:.76rem;color:var(--muted)">${k==='D'?'When we predict a draw, we are right '+v.accuracy+'% of the time (precision)':v.correct+' correct from '+v.total+' predicted'}</div>
+      <div style="font-size:.76rem;color:var(--muted)">${k==='D'?'When we predict a draw, we are right '+v.accuracy+'% of the time — but we only predicted '+v.total+' draws from '+Math.round(d.per_outcome.D.support)+' actual draws ('+(d.per_outcome.D.recall*100).toFixed(1)+'% recall). Treat draw predictions with caution.':v.correct+' correct from '+v.total+' predicted'}</div>
     </div>`).join('');
 
   // Confidence bands
@@ -822,6 +822,7 @@ async function loadPerformance(){
       <div class="card-title">Accuracy by Predicted Outcome</div>
       <p style="font-size:.82rem;color:var(--muted);margin-bottom:1.25rem">When the model predicts each outcome, how often is it right?</p>
       ${outcomeHtml}
+      <p style="font-size:.76rem;color:var(--muted);font-style:italic;margin-top:.5rem">Note: percentages show precision (when we predict X, how often correct) not recall (how many actual X outcomes we caught).</p>
     </div>
 
     <!-- Confidence reliability + Favourites vs Toss-ups -->
