@@ -463,7 +463,7 @@
         It predicts three outcomes: Home Win, Draw, or Away Win.
       </p>
       <p style="font-size:.88rem;line-height:1.7;color:#374151;margin-top:.75rem">
-        <strong>26 features</strong> are used, including:
+        <strong>26 features</strong> are used. We started with 58 candidate features and used Recursive Feature Elimination to find the optimal set — these 26 outperformed larger feature sets in independent testing:
       </p>
       <ul style="font-size:.88rem;line-height:1.8;color:#374151;margin:.5rem 0 0 1.25rem">
         <li><strong>Bookmaker implied odds</strong> — Bet365 historical odds converted to implied probabilities (home/draw/away, home edge, favourite indicator)</li>
@@ -472,7 +472,7 @@
         <li><strong>League position &amp; points</strong> — current standings, goal difference, points gap</li>
         <li><strong>ELO ratings</strong> — historical strength ratings calculated from all past results</li>
         <li><strong>Pi-ratings</strong> — an alternative team strength rating optimised for football prediction</li>
-        <li><strong>Expected Goals (xG)</strong> — rolling 5-match average xG created and conceded, removes luck from shot quality</li>
+        <li><strong>Expected Goals (xG)</strong> — rolling 5-match average xG created and conceded. Removes luck from shot quality — a team can score 3 lucky long-range goals but their xG tells the real story</li>
       </ul>
       <p style="font-size:.88rem;line-height:1.7;color:#374151;margin-top:.75rem">
         Hyperparameters were tuned with <strong>Optuna</strong> (Bayesian optimisation) and validated with <strong>walk-forward cross-validation</strong>
