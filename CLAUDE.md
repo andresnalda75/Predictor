@@ -54,19 +54,23 @@ Flask web app deployed on Railway that predicts EPL match outcomes using XGBoost
 |---|---|---|---|---|
 | 1 | **Bookmaker odds as features** — football-data.co.uk CSV has B365H/B365D/B365A columns. Add implied probability features from odds. | football-data.co.uk (free CSV) | +2-3% accuracy | ✅ DONE — 57.07% → 57.79% (+0.72pp). 11 new features from B365 odds (implied probs, home edge, favourite, overround). **Known limitation:** trained on real B365 historical odds, but live predictions use ELO-derived implied probabilities as a proxy (`get_implied_odds()` in app.py). Live accuracy may be slightly below 57.79%. To fix: implement The Odds API (A4 — value betting) for real pre-match odds. |
 | 2 | **xG from Understat** — free historical xG for EPL teams. Better than shots on target for measuring chance quality. | understat.com (free, scrape) | +1-2% accuracy | Not started |
-| 3 | **Ensemble voting** — combine XGBoost + CatBoost + LightGBM predictions via meta-learner (stacking). | Internal | +1-2% accuracy | Deprioritised — CatBoost underperformed (52-53% WF), LightGBM cancelled |
-| 4 | **Auto-retrain weekly** — accuracy improves +0.32% per week as season data accumulates. Set up GitHub Action to retrain on schedule. | GitHub Actions | +0.3%/week cumulative | Not started |
+| 3 | **FIFA/EA FC player ratings** — aggregate by role (GK/DEF/MID/FWD) per team from fifaindex.com. Captures squad quality beyond form. Research shows improvement when combined with team ratings. | fifaindex.com (free) | +1-2% accuracy | Not started |
+| 4 | **Transfermarkt squad market values** — strong proxy for team quality and depth. Proven predictive in academic literature. | transfermarkt.com (free, scrape) | +1-2% accuracy | Not started (promoted from Tier 2) |
+| 5 | **Team formation data** — 4-3-3 vs 5-4-1 etc affects defensive/offensive patterns. Available for current season. | football-data.org API | +0.5-1% accuracy | Not started |
+| 6 | **Ensemble voting** — combine XGBoost + CatBoost + LightGBM predictions via meta-learner (stacking). | Internal | +1-2% accuracy | Deprioritised — CatBoost underperformed (52-53% WF), LightGBM cancelled |
+| 7 | **Auto-retrain weekly** — accuracy improves +0.32% per week as season data accumulates. Set up GitHub Action to retrain on schedule. | GitHub Actions | +0.3%/week cumulative | Not started |
 
 ### TIER 2 — MEDIUM IMPACT, MORE WORK
 
 | # | Improvement | Notes |
 |---|---|---|
-| 5 | **Player market values from Transfermarkt** | Free, proven predictive of team quality in academic literature |
-| 6 | **Poisson regression model** | Model goals directly, derive draw probability from goal distribution. Better for draws than classification |
-| 7 | **Ordinal classification** | Treat H/D/A as ordered classes (A < D < H), not independent categories |
-| 8 | **Separate draw model** | Binary classifier for draw vs decisive, then combine with main model |
-| 9 | **SHAP explainability** | Show users WHY each prediction was made (feature contributions) |
-| 10 | **Siamese network** | Encode matchup directly as a team pair rather than two separate feature vectors |
+| 8 | **Poisson regression model** | Model goals directly, derive draw probability from goal distribution. Better for draws than classification |
+| 9 | **Ordinal classification** | Treat H/D/A as ordered classes (A < D < H), not independent categories |
+| 10 | **Separate draw model** | Binary classifier for draw vs decisive, then combine with main model |
+| 11 | **SHAP explainability** | Show users WHY each prediction was made (feature contributions) |
+| 12 | **Siamese network** | Encode matchup directly as a team pair rather than two separate feature vectors |
+| 13 | **Manager tenure** | New manager bounce is statistically proven. Scrape from Wikipedia or football-data.org |
+| 14 | **Weather data** | Precipitation and temperature at match location. Free historical via OpenWeatherMap API |
 
 ### DRAW IMPROVEMENT STRATEGIES (ordered by priority)
 
@@ -87,13 +91,19 @@ Current draw recall is 0% — the model never predicts draws. This is the single
 | 4 | **Dixon-Coles attack/defense ratings** — add 4 new features: `home_attack_rating` (goals scored relative to opposition defense strength), `home_defense_rating` (goals conceded relative to opposition attack strength), `away_attack_rating`, `away_defense_rating`. These are relative strength ratings (like Pi-ratings but split attack/defense). Different from rolling averages — Arsenal scoring 3 vs Ipswich means less than scoring 3 vs Man City. | Accuracy +1-2%, draw recall +5% | Medium — need to implement iterative rating system |
 | 5 | **Full Dixon-Coles parallel model** — replace XGBoost for draw predictions only, use XGBoost for H/A. Ensemble the two. | Draw recall +15-20% | High — two separate models, need calibration |
 | 6 | **SMOTE oversampling for draws** — synthetically oversample draw examples in training data. Last resort — risk to overall accuracy. | Draw recall +5-10% | Low — but may degrade H/A accuracy |
+| 7 | **Referee features** — referee ID already in football-data.co.uk CSV. Some referees produce more cards/chaos = more draws. Zero effort to add. | Draw recall +2-5% | Trivial — data already available |
+| 8 | **Match stakes features** — points gap to relegation/title/CL spots. Low stakes late season = more draws. Already have standings data to derive this. | Draw recall +3-5% | Low — derived from existing features |
+| 9 | **Travel/fatigue proxy** — `home_days_rest` and `away_days_rest` are ALREADY BUILT as dormant features in app.py (`get_days_rest()`). Just need to activate in next retrain. Zero development cost. | Draw recall +2-3% | Trivial — already implemented, just activate |
 
 ### TIER 3 — LONGER TERM
 
 | # | Improvement | Notes |
 |---|---|---|
-| 11 | **StatsBomb event data** | Passes, pressures, dribbles. Expensive but powerful |
-| 12 | **Tracking data** | Player positions. Not publicly available yet |
+| 15 | **StatsBomb event data** | Passes, pressures, dribbles. Expensive but powerful |
+| 16 | **Tracking data** | Player positions. Not publicly available yet |
+| 17 | **Social media sentiment** | Twitter/X pre-match sentiment. Noisy signal but novel |
+| 18 | **VAEP player ratings** | Event-based value metric, requires StatsBomb data |
+| 19 | **Weather live** | Current weather forecast for upcoming fixtures. Free APIs available |
 
 ### WHAT DIDN'T WORK — DO NOT RETRY WITHOUT NEW APPROACH
 
@@ -175,7 +185,7 @@ Current draw recall is 0% — the model never predicts draws. This is the single
 
 ## Dormant Features (in app.py, ready for next retrain)
 
-These features are computed at prediction time but NOT yet in the trained model's feature set. Include them as candidates in the next retrain:
+These features are computed at prediction time but NOT yet in the trained model's feature set. Include them as candidates in the next retrain. **Zero development cost — just activate in `build_features()` during next retrain:**
 
 | Feature | Function | Description |
 |---|---|---|
