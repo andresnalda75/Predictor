@@ -160,7 +160,7 @@ def print_academic_table():
         ("Bookmaker implied odds",          "~65%",  "Market ceiling"),
         ("LightGBM + xG (academic)",        "~67%",  "Post-match xG, not pre-match"),
         ("CatBoost + Pi-ratings",           "55.8%", "Hvattum & Arntzen-style"),
-        ("Our model (XGBoost + Optuna)",    "55.6%", "8 seasons, pre-match only"),
+        ("Our model (XGBoost + Optuna)",    "55.6%", "11 seasons (2014–2025), pre-match only"),
         ("Random baseline",                 "33.3%", "Uniform H/D/A prior"),
     ]
     print(f"  {'Model':<35} {'Accuracy':>9}  Notes")

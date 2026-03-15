@@ -21,7 +21,7 @@ All model and data changes are recorded here.
 - **Notes:** 43.4% of EPL games flip from HT result to FT result — model accounts for this.
 
 ### Data
-- `hist_matches.csv` — 8 seasons of EPL results
+- `hist_matches.csv` — 11 seasons of EPL results (2014–2025)
 - `hist_features.csv` — engineered features aligned to hist_matches.csv
 - `validation.json` — held-out test set metrics
 

@@ -25,7 +25,7 @@
   "entries": [
     {
       "date": "2026-03",
-      "model_version": "XGBoost + Optuna, 8 seasons 2017-2025 (no COVID)",
+      "model_version": "XGBoost + Optuna, 11 seasons 2014-2025",
       "pre_match_accuracy": 0.556,
       "halftime_accuracy": 0.622,
       "test_matches": 532,

@@ -400,7 +400,7 @@ def save_model(model, le, cols, eval_stats, wf_stats, best_params):
         "low_conf_acc": eval_stats.get("low_conf_acc"),
         "low_conf_n": eval_stats.get("low_conf_n"),
         "per_outcome": eval_stats.get("per_outcome", {}),
-        "model_version": f"8 seasons (2017-2025, no COVID), XGBoost + Optuna + Pi-ratings, halftime, retrained {datetime.date.today()}",
+        "model_version": f"11 seasons (2014-2025), XGBoost + Optuna + Pi-ratings, halftime, retrained {datetime.date.today()}",
         "walk_forward_accuracy": round(wf_stats["accuracy"], 4),
         "walk_forward_rps": round(wf_stats["rps"], 4),
         "walk_forward_draw_recall": round(wf_stats["draw_recall"], 4) if not np.isnan(wf_stats["draw_recall"]) else None,
