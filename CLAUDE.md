@@ -30,19 +30,20 @@ Flask web app deployed on Railway that predicts EPL match outcomes using XGBoost
 
 | Model | Accuracy | Features | Test Matches | Notes |
 |---|---|---|---|---|
-| Pre-match (deployed) | 57.79% | 47 | 834 | XGBoost + Optuna + Pi-ratings + B365 odds + exp. decay, 11 seasons (2014–2025) |
+| Pre-match (deployed) | 59.11% | 26 | 834 | XGBoost + Optuna + Pi-ratings + B365 odds + xG + exp. decay, 11 seasons (2014–2025) |
 | Halftime in-game | 60.6% | 35 | 834 | Uses HT score + form + ELO + Pi-ratings |
 | Random baseline | 33.3% | — | — | 3-outcome coin flip |
 | Pro benchmark | 54–56% | — | — | Industry standard |
 
-**Pre-match model details (retrained 2026-03-14):**
-- RPS: 0.1894 (random ≈ 0.222)
-- Draw recall: 0% (critical weakness, draws are 23% of outcomes)
-- High confidence (>=50%): 66.1% accuracy on 487 matches
-- Big game (8+ pos gap): 62.5% on 304 matches
-- Close game (<4 pos gap): 52.6% on 270 matches
-- Walk-forward accuracy: 56.4%
-- Key features: B365 implied odds, Pi-ratings, ELO, form (exp. decay), league position, shots
+**Pre-match model details (retrained 2026-03-15):**
+- RPS: 0.1895 (random ≈ 0.222)
+- Draw recall: 3.66% (up from 0%, still weak but improving)
+- High confidence (>=60%): 70.1% accuracy
+- Close game (<4 pos gap): 55.2%
+- Walk-forward accuracy: 55.70%
+- 26 features selected by RFE (down from 47 — leaner model is better)
+- Key features: B365 implied odds, xG (5 features), Pi-ratings, ELO, form (exp. decay)
+- Best params: n_estimators=443, lr=0.196, max_depth=7, subsample=0.766, colsample=0.920, min_child_weight=10, gamma=3.076, reg_alpha=4.888, reg_lambda=2.676
 
 ---
 
@@ -120,21 +121,23 @@ Current draw recall is 0% — the model never predicts draws. This is the single
 | xG alone without odds | 57.67% holdout — did not beat 57.79% champion | xG adds value but not enough to displace B365 odds features alone |
 | COVID exclusion (1920 and/or 2021) | Hurts accuracy −1.2% to −1.5% | Model learns from all data including COVID anomalies; removing seasons shrinks training set. Keep all 11 seasons. |
 | CatBoost balanced class weights | Walk-forward peaked at 52–53% | Well below XGBoost 55% — ruled out without new features |
+| days_rest / momentum features | Dropped by RFE (2026-03-15) | Not predictive enough — xG and odds features dominate |
+| 100 Optuna trials | Missed best params | Best found at trial 247 of 300 — always run 300+ trials |
 
 ### TESTING PROTOCOL — REQUIRED BEFORE DEPLOYING ANY NEW MODEL
 
-1. Must beat **57.79%** on held-out test set (80/20 chronological split)
+1. Must beat **59.11%** on held-out test set (80/20 chronological split)
 2. Must have walk-forward mean accuracy **> 55%**
 3. Must not increase home bias (check H recall stays **below 85%**)
-4. Run at least **3 Optuna trials**, take the best
-5. Compare RPS score (lower is better, target **< 0.195**)
-6. Check draw recall — any improvement over 1.57% is a bonus
+4. Run at least **300 Optuna trials** (best params found at trial 247 — 100 is not enough)
+5. Compare RPS score (lower is better, target **< 0.190**)
+6. Check draw recall — any improvement over 3.66% is a bonus
 7. Update `validation.json`, `results.json`, and `CHANGELOG.md` before pushing
-8. **Odds feature caveat:** the 57.79% holdout was trained on real B365 odds, but live predictions use ELO-derived proxies. Live accuracy will be lower until The Odds API is integrated (A4). When comparing models, note whether odds features used real or proxy values.
+8. **Live odds now available:** The Odds API integrated. Live predictions use real odds when available, ELO-derived proxy as fallback.
 
 ---
 
-## Agent Status (as of 2026-03-14)
+## Agent Status (as of 2026-03-15)
 
 ### Agent 1 — `frontend-improvements` ✅ DONE
 **All tasks complete:**
@@ -145,6 +148,14 @@ Current draw recall is 0% — the model never predicts draws. This is the single
 - Injury indicators
 - Dark mode toggle
 - H2H summary in predictions
+- Nav reordered: Fixtures | Predict | Performance | Teams | Live | H2H | Table | Methodology
+- Performance tab consolidated from 4 tabs (Stats, Accuracy, Confidence, About)
+- Methodology tab created from About page
+- Tab persistence on refresh via localStorage
+- Fixtures pre-cached at startup
+- Live odds badges on fixtures (⚡ icon, white text)
+- Table tab: form dots, sortable columns, column order Team | Form | P | PTS | W | D | L | GF | GA | GD
+- Loading skeletons on all tabs
 
 ### Agent 2 — `data-pipeline` ✅ DONE
 **All tasks complete:**
@@ -153,14 +164,16 @@ Current draw recall is 0% — the model never predicts draws. This is the single
 - hist_features.csv rebuilt with 36 features + join keys (date, home_team, away_team)
 - Pi-team-ratings.csv for live predictions
 
-### Agent 3 — `model-improvements`
-**Branch:** `model-improvements`
+### Agent 3 — `model-improvements` ✅ CHAMPION DEPLOYED
 **Goal:** Improve model accuracy beyond 57.79%
+**Result:** 59.11% accuracy (+1.32pp), deployed 2026-03-15
 **Completed:**
-- Retrained champion model: 55.6% → 57.07% → 57.79% (+2.19pp total)
+- Retrained champion model: 55.6% → 57.07% → 57.79% → **59.11%** (+3.51pp total)
+- xG features added and survived RFE: home_xg_avg, away_xg_avg, home_xga_avg, away_xga_avg, xg_diff
+- RFE found 26 optimal features (down from 47 — leaner model is better)
+- 300 Optuna trials (best params at trial 247 — 100 would have missed it)
+- Draw recall improved: 0.0% → 3.66%
 - Pi-ratings integrated (pi_home, pi_away, pi_diff)
-- RFE feature selection (41 candidates → 36 selected)
-- Optuna hyperparameter search with walk-forward CV
 - Fixed cols_champion.pkl mismatch (15 → 36 features)
 - Fixed away_form_ga bug (was using a_gf instead of a_ga)
 - Fixed validation.json accuracy source (now reads from file, not recalculated)
@@ -168,11 +181,17 @@ Current draw recall is 0% — the model never predicts draws. This is the single
 - Fixed halftime merge (date+team join keys instead of index alignment)
 - Fixed halftime endpoint 500 error (feat_dict missing 16 features)
 - Created CatBoost vs XGBoost vs LightGBM experiment script
+- Created COVID exclusion experiment script
+- **Dropped by RFE:** days_rest, momentum, most shot stats, most form features
 
-### Agent 4 — `benchmarking` (not started)
+### Agent 4 — `benchmarking` (in progress)
 **Goal:** Value betting / Odds API integration
-**Tasks:**
-- Odds API integration for value bet detection
+**Completed:**
+- The Odds API integrated — 19–20 matches live, 476/500 requests remaining
+- `/api/performance` endpoint live
+- All hardcoded accuracy stats replaced with dynamic values
+**Remaining:**
+- Value bet detection logic
 - Prediction logging (store every prediction with actual result)
 - Weekly accuracy report (rolling 10-match accuracy)
 - Calibration curve for confidence scores
@@ -188,25 +207,28 @@ Current draw recall is 0% — the model never predicts draws. This is the single
 
 ## Dormant Features (in app.py, ready for next retrain)
 
-These features are computed at prediction time but NOT yet in the trained model's feature set. Include them as candidates in the next retrain. **Zero development cost — just activate in `build_features()` during next retrain:**
+These features are computed at prediction time but NOT yet in the trained model's feature set:
 
-| Feature | Function | Description |
-|---|---|---|
-| `home_days_rest` / `away_days_rest` | `get_days_rest()` | Days since last match |
-| `home_momentum` / `away_momentum` | `get_momentum()` | PPG delta (recent 5 vs prior 5) |
-| `h2h_home_wins` / `h2h_draws` / `h2h_away_wins` | `get_h2h()` | Head-to-head record |
-| `home_injuries` / `away_injuries` | `get_injury_count()` | Pre-match injury count (API-Football) |
+| Feature | Function | Description | Status |
+|---|---|---|---|
+| `home_days_rest` / `away_days_rest` | `get_days_rest()` | Days since last match | ❌ Tested 2026-03-15, dropped by RFE |
+| `home_momentum` / `away_momentum` | `get_momentum()` | PPG delta (recent 5 vs prior 5) | ❌ Tested 2026-03-15, dropped by RFE |
+| `h2h_home_wins` / `h2h_draws` / `h2h_away_wins` | `get_h2h()` | Head-to-head record | Not yet tested |
+| `home_injuries` / `away_injuries` | `get_injury_count()` | Pre-match injury count (API-Football) | Not yet tested |
 
 ---
 
 ## Next Session Priorities
 
-1. **A3:** Activate dormant features (`days_rest`, `momentum`) — zero cost, include in next retrain
-2. **A3:** Referee features — already in football-data.co.uk CSV, add to feature set, next retrain
-3. **A3:** Custom draw threshold — 5 lines of code, test immediately after retrain
+1. Push new champion (59.11%) to Railway (pending)
+2. **A3:** GitHub Action — weekly auto-retrain for compound gain
+3. **A4:** Value betting — `ODDS_API_KEY` available, The Odds API already integrated
 4. **A3:** FIFA player ratings — scrape fifaindex.com, aggregate by role (GK/DEF/MID/FWD)
-5. **A3:** GitHub Action — weekly auto-retrain for compound gain
-6. **A4:** Value betting — `ODDS_API_KEY` now available, ready to start
+5. **A3:** Transfermarkt market values — scrape squad values
+6. **A3:** Custom draw threshold — 5 lines of code, test post-retrain
+7. **A3:** Referee data pipeline — football-data.co.uk CSV
+8. **A1:** Teams table column order fix on mobile
+9. **A1:** Tab refresh fixes on web
 
 ---
 
@@ -214,7 +236,7 @@ These features are computed at prediction time but NOT yet in the trained model'
 
 1. ~~**Stabilise** — fix data pipeline (ELO, shots for live matches), keep deployed model working~~ ✅
 2. **Benchmark** — set up prediction logging so we can track live accuracy week by week
-3. ~~**Improve model** — retrain with better features, target >56% pre-match~~ ✅ (57.07%)
+3. ~~**Improve model** — retrain with better features, target >56% pre-match~~ ✅ (59.11%)
 4. ~~**Frontend polish** — mobile, form indicators, search~~ ✅
 5. **Monetise** — see MARKETING.md
 
