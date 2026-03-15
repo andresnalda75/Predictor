@@ -322,7 +322,7 @@
   <section id="teams" class="section">
     <div class="card">
       <div class="card-title">Prediction Accuracy by Team</div>
-      <p style="font-size:.82rem;color:var(--muted);margin-bottom:1rem">Based on holdout test set from 8 seasons of historical data (2017–2025)</p>
+      <p style="font-size:.82rem;color:var(--muted);margin-bottom:1rem">How accurately did we predict each team? Historical = held-out test matches from 8 seasons (2017–2025). This Season = live predictions since March 2026.</p>
       <div class="seg-toggle">
         <button class="seg-btn active" onclick="filterTeams('all',this)">All</button>
         <button class="seg-btn" onclick="filterTeams('good',this)">Above 40%</button>
@@ -330,11 +330,11 @@
       </div>
       <div style="overflow-x:auto">
         <table class="data-table">
-          <thead><tr><th>#</th><th>Team</th><th>Seasons</th><th>Historical</th><th>This Season</th><th>Pre-Match</th><th>In-Game</th></tr></thead>
+          <thead><tr><th>#</th><th>Team</th><th title="Seasons this team appeared in our training data">EPL Seasons</th><th title="Matches from our 8-season holdout test set">Test Games</th><th title="Live predictions made this season">2025/26</th><th>Pre-Match</th><th>In-Game</th></tr></thead>
           <tbody id="teams-tbody"><tr><td colspan="7" class="loading">Loading…</td></tr></tbody>
         </table>
       </div>
-      <p style="font-size:.76rem;color:var(--muted);margin-top:.75rem;font-style:italic">* Recently promoted — limited historical data.<br>Historical accuracy measured on holdout test data. This Season shows live predictions since deployment — sample size growing weekly.</p>
+      <p style="font-size:.76rem;color:var(--muted);margin-top:.75rem;font-style:italic">Test Games: how many matches this team appeared in our held-out test set (834 total across 20 teams ≈ 83 per team). Teams with fewer Test Games were promoted/relegated during 2017–2025. 2025/26 accuracy grows as the season progresses — small sample, treat with caution. * = recently promoted team with limited test history.</p>
     </div>
   </section>
   <section id="confidence" class="section">
