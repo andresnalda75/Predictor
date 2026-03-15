@@ -477,9 +477,38 @@ def full_evaluate(model, le, cols, X_test, y_test):
         r = report[label]
         print(f"    {label}: precision={r['precision']:.3f}  recall={r['recall']:.3f}  f1={r['f1-score']:.3f}  n={r['support']}")
 
-    # Confidence bands
-    max_conf = proba.max(axis=1)
-    high_mask = max_conf >= 0.50
+    # Confidence bands (dynamic — auto-updates after every retrain)
+    max_conf = proba.max(axis=1) * 100  # convert to percentage
+    bands = {
+        "below_40":  max_conf < 40,
+        "band_40_50": (max_conf >= 40) & (max_conf < 50),
+        "band_50_60": (max_conf >= 50) & (max_conf < 60),
+        "above_60":  max_conf >= 60,
+    }
+    confidence_bands = {}
+    print(f"\n  Confidence bands:")
+    for name, mask in bands.items():
+        n_band = int(mask.sum())
+        if n_band > 0:
+            band_acc = accuracy_score(
+                [y_true[i] for i in range(len(y_true)) if mask[i]],
+                [y_pred[i] for i in range(len(y_pred)) if mask[i]]
+            )
+            band_correct = int(sum(
+                y_pred[i] == y_true[i] for i in range(len(y_true)) if mask[i]
+            ))
+            confidence_bands[name] = {
+                "accuracy": round(band_acc, 4),
+                "correct": band_correct,
+                "total": n_band,
+            }
+            print(f"    {name}: {band_acc:.3%} ({band_correct}/{n_band})")
+        else:
+            confidence_bands[name] = {"accuracy": 0, "correct": 0, "total": 0}
+
+    # High/low confidence (50% threshold)
+    high_mask = max_conf >= 50
+    high_acc = low_acc = None
     if high_mask.sum() > 0:
         high_acc = accuracy_score(
             [y_true[i] for i in range(len(y_true)) if high_mask[i]],
@@ -522,6 +551,7 @@ def full_evaluate(model, le, cols, X_test, y_test):
         "total": len(y_true),
         "rps": round(rps, 4),
         "draw_recall": round(dr, 4),
+        "confidence_bands": confidence_bands,
         "high_conf_acc": round(float(high_acc), 4) if high_mask.sum() > 0 else None,
         "high_conf_n": int(high_mask.sum()),
         "low_conf_acc": round(float(low_acc), 4) if low_mask.sum() > 0 else None,
@@ -610,6 +640,13 @@ def save_model(model, le, cols, eval_stats, wf_stats, best_params):
         eval_stats["correct"], eval_stats["total"], 1 / 3, alternative="greater"
     ).pvalue if eval_stats["total"] > 0 else 1.0
 
+    # Count seasons from the training data
+    matches_df = pd.read_csv(HIST_MATCHES)
+    all_seasons = sorted(matches_df["season_code"].unique())
+    n_seasons = len(all_seasons)
+    first_year = 2000 + all_seasons[0] // 100  # e.g. 1415 → 2014
+    last_year = 2000 + all_seasons[-1] % 100    # e.g. 2425 → 2025
+
     val = {
         "accuracy": eval_stats["accuracy"],
         "correct": eval_stats["correct"],
@@ -618,6 +655,7 @@ def save_model(model, le, cols, eval_stats, wf_stats, best_params):
         "beats_random_by": round((eval_stats["accuracy"] - 1 / 3) / (1 / 3) * 100, 1),
         "rps": eval_stats["rps"],
         "draw_recall": eval_stats["draw_recall"],
+        "confidence_bands": eval_stats.get("confidence_bands", {}),
         "high_conf_acc": eval_stats.get("high_conf_acc"),
         "high_conf_n": eval_stats.get("high_conf_n"),
         "low_conf_acc": eval_stats.get("low_conf_acc"),
@@ -627,7 +665,9 @@ def save_model(model, le, cols, eval_stats, wf_stats, best_params):
         "close_game_acc": eval_stats.get("close_game_acc"),
         "close_game_n": eval_stats.get("close_game_n", 0),
         "per_outcome": eval_stats.get("per_outcome", {}),
-        "model_version": f"8 seasons (2017-2025, no COVID), XGBoost + Optuna + Pi-ratings, retrained {datetime.date.today()}",
+        "seasons": n_seasons,
+        "training_seasons": f"{first_year}-{last_year}",
+        "model_version": f"{n_seasons} seasons ({first_year}-{last_year}), XGBoost + Optuna + Pi-ratings, retrained {datetime.date.today()}",
         "walk_forward_accuracy": round(wf_stats["accuracy"], 4),
         "walk_forward_rps": round(wf_stats["rps"], 4),
         "walk_forward_draw_recall": round(wf_stats["draw_recall"], 4) if not np.isnan(wf_stats["draw_recall"]) else None,

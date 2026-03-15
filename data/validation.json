@@ -6,6 +6,12 @@
   "beats_random_by": 73.4,
   "rps": 0.1894,
   "draw_recall": 0.0,
+  "confidence_bands": {
+    "below_40": {"accuracy": 0.441, "correct": 45, "total": 102},
+    "band_40_50": {"accuracy": 0.4816, "correct": 118, "total": 245},
+    "band_50_60": {"accuracy": 0.561, "correct": 92, "total": 164},
+    "above_60": {"accuracy": 0.7023, "correct": 227, "total": 323}
+  },
   "high_conf_acc": 0.6612,
   "high_conf_n": 487,
   "low_conf_acc": 0.4611,
@@ -34,7 +40,9 @@
       "support": 372.0
     }
   },
-  "model_version": "8 seasons (2017-2025, no COVID), XGBoost + Optuna + Pi-ratings, retrained 2026-03-14",
+  "seasons": 11,
+  "training_seasons": "2014-2025",
+  "model_version": "11 seasons (2014-2025), XGBoost + Optuna + Pi-ratings, retrained 2026-03-14",
   "walk_forward_accuracy": 0.5638,
   "walk_forward_rps": 0.1944,
   "walk_forward_draw_recall": 0.0311,

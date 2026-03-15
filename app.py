@@ -608,6 +608,12 @@ def api_validation():
     with open(os.path.join(BASE, "data", "validation.json")) as f:
         return jsonify(json.load(f))
 
+@app.route("/api/performance")
+def api_performance():
+    """Return all validation stats for the Performance tab — single call."""
+    with open(os.path.join(BASE, "data", "validation.json")) as f:
+        return jsonify(json.load(f))
+
 
 def _build_predictions():
     """Build predictions for all upcoming fixtures. Called by cache refresh."""
