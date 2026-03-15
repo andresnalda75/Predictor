@@ -130,17 +130,17 @@ def get_rolling_xg(df_up_to, team, n=5):
 
 
 def get_days_rest(df_up_to, team, match_date):
-    """Days since the team's most recent match before match_date."""
+    """Days since the team's most recent match before match_date. Capped at 21."""
     tm = df_up_to[((df_up_to["home_team"] == team) | (df_up_to["away_team"] == team))]
     if len(tm) == 0:
         return 7  # default: one week
     last_date = pd.to_datetime(tm.iloc[-1]["date"])
     match_dt = pd.to_datetime(match_date)
     days = (match_dt - last_date).days
-    return max(days, 0)
+    return min(max(days, 0), 21)
 
 
-def get_momentum(df_up_to, team, n=5):
+def get_momentum(df_up_to, team, n=3):
     """Form momentum: PPG in last n matches minus PPG in prior n matches.
     Positive = rising form, negative = falling form."""
     tm = df_up_to[((df_up_to["home_team"] == team) | (df_up_to["away_team"] == team))]
@@ -299,15 +299,18 @@ def build_features(matches_df, pi_df):
             "away_momentum": get_momentum(df_before, away),
         }
 
-        # xG rolling averages (5-game)
+        # xG rolling averages (5-game) — fill with 0 for pre-2017 matches
         h_xg, h_xga = get_rolling_xg(df_before, home)
         a_xg, a_xga = get_rolling_xg(df_before, away)
-        if h_xg is not None and a_xg is not None:
-            feat["home_xg_avg"] = round(h_xg, 3)
-            feat["away_xg_avg"] = round(a_xg, 3)
-            feat["home_xga_avg"] = round(h_xga, 3)
-            feat["away_xga_avg"] = round(a_xga, 3)
-            feat["xg_diff"] = round(h_xg - a_xg, 3)
+        h_xg = h_xg if h_xg is not None else 0.0
+        h_xga = h_xga if h_xga is not None else 0.0
+        a_xg = a_xg if a_xg is not None else 0.0
+        a_xga = a_xga if a_xga is not None else 0.0
+        feat["home_xg_avg"] = round(h_xg, 3)
+        feat["away_xg_avg"] = round(a_xg, 3)
+        feat["home_xga_avg"] = round(h_xga, 3)
+        feat["away_xga_avg"] = round(a_xga, 3)
+        feat["xg_diff"] = round(h_xg - a_xg, 3)
 
         # Bookmaker odds derived features
         if has_odds and pd.notna(row.get("b365_implied_home")):
