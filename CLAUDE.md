@@ -123,7 +123,8 @@ Current draw recall is 0% — the model never predicts draws. This is the single
 | CatBoost balanced class weights | Walk-forward peaked at 52–53% | Well below XGBoost 55% — ruled out without new features |
 | days_rest / momentum features | Dropped by RFE (2026-03-15) | Not predictive enough — xG and odds features dominate |
 | 100 Optuna trials | Missed best params | Best found at trial 247 of 300 — always run 300+ trials |
-| FIFA ratings alone (31 features) | 57.31% holdout, −1.80pp vs 59.11% champion | 6 of 9 FIFA features survived RFE (home_fifa_att, home_fifa_overall, away_fifa_def, away_fifa_mid, away_fifa_overall, fifa_overall_diff) but Optuna found shallow trees (max_depth=3) vs champion's deep trees (max_depth=7). Different feature set requires different hyperparameters — walk-forward CV Optuna finds conservative params. Need direct holdout Optuna. Try again in combined retrain with Transfermarkt + referee features. |
+| FIFA ratings alone (31 features) | 57.31% holdout, −1.80pp vs 59.11% champion | 6 of 9 FIFA features survived RFE but Optuna found shallow trees (max_depth=3) vs champion's deep trees (max_depth=7). Walk-forward CV Optuna finds conservative params. |
+| Combined FIFA+Transfermarkt+match stakes+referee (37 features) | 58.27% via direct Optuna, −0.84pp vs 59.11% champion | New features survive RFE but add noise for Optuna. Referee features dropped by RFE entirely. Try encoding squad value as ratio vs opponent rather than normalized absolute value. |
 
 ### TESTING PROTOCOL — REQUIRED BEFORE DEPLOYING ANY NEW MODEL
 
