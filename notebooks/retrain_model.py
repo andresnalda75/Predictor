@@ -46,6 +46,7 @@ BENCH_DIR = os.path.join(ROOT, "benchmarks")
 HIST_MATCHES = os.path.join(DATA_DIR, "hist_matches.csv")
 PI_RATINGS = os.path.join(DATA_DIR, "pi_ratings.csv")
 FIFA_RATINGS = os.path.join(DATA_DIR, "fifa_ratings.csv")
+TM_VALUES = os.path.join(DATA_DIR, "transfermarkt_values.csv")
 HIST_FEATURES = os.path.join(DATA_DIR, "hist_features.csv")
 VALIDATION_JSON = os.path.join(DATA_DIR, "validation.json")
 RESULTS_JSON = os.path.join(BENCH_DIR, "results.json")
@@ -237,14 +238,31 @@ def get_cumulative_standing(df_season):
     return standings
 
 
-def build_features(matches_df, pi_df, fifa_df=None):
+def build_features(matches_df, pi_df, fifa_df=None, tm_df=None):
     """
-    Build feature matrix from raw match data + pi_ratings + optional fifa_ratings.
+    Build feature matrix from raw match data + pi_ratings + optional fifa/transfermarkt.
     Processes matches chronologically, using only data available BEFORE each match.
     Returns DataFrame with all features + 'result' column.
     """
     matches = matches_df.sort_values("date").reset_index(drop=True)
     pi = pi_df.sort_values("date").reset_index(drop=True)
+
+    # Build Transfermarkt lookup: (season_code, team) → {squad_value_norm, avg_player_norm}
+    tm_lookup = {}
+    tm_season_avg = {}
+    if tm_df is not None:
+        for _, r in tm_df.iterrows():
+            tm_lookup[(int(r["season_code"]), r["team"])] = {
+                "sv_norm": r["squad_value_norm"],
+                "ap_norm": r["avg_player_norm"],
+            }
+        for sc in tm_df["season_code"].unique():
+            sdf = tm_df[tm_df["season_code"] == sc]
+            tm_season_avg[int(sc)] = {
+                "sv_norm": round(sdf["squad_value_norm"].mean(), 3),
+                "ap_norm": round(sdf["avg_player_norm"].mean(), 3),
+            }
+        print(f"  Transfermarkt values: {len(tm_lookup)} team-seasons loaded")
 
     # Build FIFA ratings lookup: (season_code, team) → ratings dict
     fifa_lookup = {}
@@ -399,6 +417,16 @@ def build_features(matches_df, pi_df, fifa_df=None):
             feat["away_fifa_mid"] = a_fifa["mid"]
             feat["away_fifa_overall"] = a_fifa["overall"]
             feat["fifa_overall_diff"] = round(h_fifa["overall"] - a_fifa["overall"], 1)
+
+        # Transfermarkt squad values (season-level, normalized)
+        if tm_lookup:
+            sc = int(season)
+            tm_fallback = tm_season_avg.get(sc, {"sv_norm": 1.0, "ap_norm": 1.0})
+            h_tm = tm_lookup.get((sc, home), tm_fallback)
+            a_tm = tm_lookup.get((sc, away), tm_fallback)
+            feat["home_squad_value"] = h_tm["sv_norm"]
+            feat["away_squad_value"] = a_tm["sv_norm"]
+            feat["squad_value_diff"] = round(h_tm["sv_norm"] - a_tm["sv_norm"], 3)
 
         # Referee features (rolling stats from prior matches)
         ref_name = row.get("referee", "Unknown") if "referee" in matches.columns else "Unknown"
@@ -879,13 +907,15 @@ def main():
     matches = pd.read_csv(HIST_MATCHES, parse_dates=["date"])
     pi = pd.read_csv(PI_RATINGS, parse_dates=["date"])
     fifa = pd.read_csv(FIFA_RATINGS) if os.path.exists(FIFA_RATINGS) else None
-    print(f"   hist_matches.csv: {len(matches)} rows")
-    print(f"   pi_ratings.csv:   {len(pi)} rows")
-    print(f"   fifa_ratings.csv: {len(fifa) if fifa is not None else 'NOT FOUND'}")
+    tm = pd.read_csv(TM_VALUES) if os.path.exists(TM_VALUES) else None
+    print(f"   hist_matches.csv:         {len(matches)} rows")
+    print(f"   pi_ratings.csv:           {len(pi)} rows")
+    print(f"   fifa_ratings.csv:         {len(fifa) if fifa is not None else 'NOT FOUND'}")
+    print(f"   transfermarkt_values.csv: {len(tm) if tm is not None else 'NOT FOUND'}")
 
     # ── 2. Build features ─────────────────────────────────────────────────────
     print("\n2. Building features (this takes a few minutes)...")
-    feat_df = build_features(matches, pi, fifa)
+    feat_df = build_features(matches, pi, fifa, tm)
 
     # Save updated features
     save_updated_features(feat_df)

@@ -50,20 +50,22 @@ def main():
     sys.modules["optuna"] = mock_optuna
     sys.modules["optuna.logging"] = mock_optuna.logging
 
-    from retrain_model import build_features, HIST_MATCHES, PI_RATINGS, FIFA_RATINGS, HIST_FEATURES
+    from retrain_model import build_features, HIST_MATCHES, PI_RATINGS, FIFA_RATINGS, TM_VALUES, HIST_FEATURES
 
     # Load data
     print("\n1. Loading data...")
     matches = pd.read_csv(HIST_MATCHES, parse_dates=["date"])
     pi = pd.read_csv(PI_RATINGS, parse_dates=["date"])
     fifa = pd.read_csv(FIFA_RATINGS) if os.path.exists(FIFA_RATINGS) else None
-    print(f"   hist_matches.csv: {len(matches)} rows")
-    print(f"   pi_ratings.csv:   {len(pi)} rows")
-    print(f"   fifa_ratings.csv: {len(fifa) if fifa is not None else 'NOT FOUND'}")
+    tm = pd.read_csv(TM_VALUES) if os.path.exists(TM_VALUES) else None
+    print(f"   hist_matches.csv:         {len(matches)} rows")
+    print(f"   pi_ratings.csv:           {len(pi)} rows")
+    print(f"   fifa_ratings.csv:         {len(fifa) if fifa is not None else 'NOT FOUND'}")
+    print(f"   transfermarkt_values.csv: {len(tm) if tm is not None else 'NOT FOUND'}")
 
     # Build features
     print("\n2. Building features (this takes a few minutes)...")
-    feat_df = build_features(matches, pi, fifa)
+    feat_df = build_features(matches, pi, fifa, tm)
 
     # Save
     print(f"\n3. Saving hist_features.csv...")
