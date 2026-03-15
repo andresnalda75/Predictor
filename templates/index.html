@@ -265,9 +265,9 @@
     <button class="tab-btn" onclick="showTab('predict',this)">Predict</button>
     <button class="tab-btn" onclick="showTab('halftime',this)">Half Time</button>
     <button class="tab-btn" onclick="showTab('validation',this)">Validation</button>
+    <button class="tab-btn" onclick="showTab('about',this)">About</button>
     <button class="tab-btn" onclick="showTab('fixtures',this)">Fixtures</button>
     <button class="tab-btn" onclick="showTab('standings',this)">Standings</button>
-    <button class="tab-btn" onclick="showTab('about',this)">About</button>
   </nav>
   <button class="hamburger" id="hamburger" onclick="toggleMenu()" aria-label="Menu">
     <span></span><span></span><span></span>
@@ -281,9 +281,9 @@
   <button class="tab-btn" onclick="showTab('predict',this)">Predict</button>
   <button class="tab-btn" onclick="showTab('halftime',this)">Half Time</button>
   <button class="tab-btn" onclick="showTab('validation',this)">Validation</button>
+  <button class="tab-btn" onclick="showTab('about',this)">About</button>
   <button class="tab-btn" onclick="showTab('fixtures',this)">Fixtures</button>
   <button class="tab-btn" onclick="showTab('standings',this)">Standings</button>
-  <button class="tab-btn" onclick="showTab('about',this)">About</button>
 </nav>
 <main>
   <section id="overview" class="section active">
@@ -539,7 +539,7 @@
         It predicts three outcomes: Home Win, Draw, or Away Win.
       </p>
       <p style="font-size:.88rem;line-height:1.7;color:#374151;margin-top:.75rem">
-        <strong>25 features</strong> are used, including:
+        <strong>47 features</strong> are used, including:
       </p>
       <ul style="font-size:.88rem;line-height:1.8;color:#374151;margin:.5rem 0 0 1.25rem">
         <li><strong>Bookmaker implied odds</strong> — Bet365 historical odds converted to implied probabilities (home/draw/away, home edge, favourite indicator)</li>
@@ -547,7 +547,7 @@
         <li><strong>Home/away specific form</strong> — how each team performs at home vs away</li>
         <li><strong>League position &amp; points</strong> — current standings, goal difference, points gap</li>
         <li><strong>ELO ratings</strong> — historical strength ratings calculated from all past results</li>
-        <li><strong>Pi-ratings</strong> — home/away split ratings that capture venue-specific ability</li>
+        <li><strong>Pi-ratings</strong> — an alternative team strength rating optimised for football prediction</li>
         <li><strong>Shot statistics</strong> — rolling 5-match averages for shots, shots on target, and defensive stats</li>
       </ul>
       <p style="font-size:.88rem;line-height:1.7;color:#374151;margin-top:.75rem">
@@ -585,8 +585,8 @@
     <div class="card" style="margin-bottom:1rem">
       <div class="card-title">Honest Limitations</div>
       <ul style="font-size:.9rem;line-height:1.9;color:#374151;margin:.5rem 0 0 1.25rem">
-        <li><strong>0% draw recall</strong> — the model almost never predicts draws. Draws are 23% of EPL outcomes but the model finds it more profitable to predict Home/Away. This is the single biggest weakness.</li>
-        <li><strong>Live odds are approximated</strong> — the model was trained on real Bet365 historical odds, but live predictions use ELO-derived implied probabilities as a proxy. Live accuracy may be slightly lower than 57.8% until we integrate a real-time odds API.</li>
+        <li><strong>0% draw recall</strong> — the model almost never predicts draws. Draws are 23% of EPL outcomes but the model finds it more accurate to predict Home/Away. This is the single biggest weakness.</li>
+        <li><strong>Live odds are being upgraded</strong> — the model was trained on real Bet365 historical odds. Real-time odds via The Odds API are being integrated to replace the current ELO proxy for live predictions.</li>
         <li><strong>Promoted teams have less data</strong> — teams like Ipswich or Sunderland with only 1–2 EPL seasons in our dataset have fewer training examples. Predictions for these teams are less reliable.</li>
         <li><strong>No player-level data</strong> — the model knows team form and strength but not who is playing. A key injury or tactical change is invisible to it.</li>
         <li><strong>Football is inherently unpredictable</strong> — even with perfect data, match outcomes have a ceiling. The difference between 57.8% and a coin flip is meaningful, but it still means 4 in 10 predictions are wrong.</li>
@@ -597,10 +597,10 @@
       <div class="card">
         <div class="card-title">Data Sources</div>
         <ul style="font-size:.88rem;line-height:1.9;color:#374151;margin:.5rem 0 0 1.25rem">
-          <li><strong>football-data.org</strong> — live match results, standings, fixtures (API v4)</li>
-          <li><strong>football-data.co.uk</strong> — historical Bet365 odds (11 seasons of H/D/A odds)</li>
+          <li><strong>football-data.org</strong> — live match results, standings, fixtures</li>
+          <li><strong>football-data.co.uk</strong> — historical Bet365 odds (11 seasons)</li>
           <li><strong>ELO &amp; Pi-ratings</strong> — calculated from all historical results</li>
-          <li><strong>API-Football</strong> — pre-match injury counts (optional, degrades gracefully)</li>
+          <li><strong>API-Football</strong> — pre-match injury counts</li>
         </ul>
       </div>
       <div class="card">
