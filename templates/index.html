@@ -730,7 +730,7 @@ async function loadPerformance(){
       <div style="background:#f3f4f6;border-radius:6px;height:12px;margin-bottom:.3rem">
         <div style="width:${v.accuracy}%;background:${outcomeColors[k]};border-radius:6px;height:12px;transition:width .6s ease"></div>
       </div>
-      <div style="font-size:.76rem;color:var(--muted)">${v.correct} correct from ${v.total} predicted</div>
+      <div style="font-size:.76rem;color:var(--muted)">${k==='D'?'When we predict a draw, we are right '+v.accuracy+'% of the time (precision)':v.correct+' correct from '+v.total+' predicted'}</div>
     </div>`).join('');
 
   // Confidence bands
@@ -751,10 +751,10 @@ async function loadPerformance(){
      body:`Only ${drawRecallPct}% recall on draws — an industry-wide problem. Even professional models struggle to predict draws reliably.`},
     {bg:'#f0fdf4',border:'#bbf7d0',icon:'✅',title:'Not luck',
      body:`p-value of 5×10⁻²⁶ means this accuracy is statistically impossible by chance. The model has learned real patterns.`},
-    {bg:'#f0fdf4',border:'#bbf7d0',icon:'✅',title:'${d.seasons} seasons of data',
+    {bg:'#f0fdf4',border:'#bbf7d0',icon:'✅',title:d.seasons+' seasons of data',
      body:`Trained on ${d.seasons} EPL seasons (${d.training_seasons}). Enough data to learn robust patterns across multiple eras of the league.`},
-    {bg:'#fff8e1',border:'#fde68a',icon:'⚠️',title:'Live ELO is approximate',
-     body:`ELO ratings for the current season use last known historical values. Live odds via The Odds API are being integrated.`},
+    {bg:'#f0fdf4',border:'#bbf7d0',icon:'✅',title:'Live odds integrated',
+     body:'Real-time bookmaker odds via The Odds API now power upcoming fixture predictions. ELO proxy only used as fallback.'},
   ];
   const limHtml = limitations.map(l=>`
     <div style="background:${l.bg};border:1px solid ${l.border};border-radius:10px;padding:1rem">
