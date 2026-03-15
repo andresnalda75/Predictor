@@ -157,9 +157,8 @@
   .fixture-pred.D{background:var(--amber);color:var(--ink);}
   .fixture-pred.A{background:var(--blue);}
   .fixture-conf-inline{font-weight:400;font-family:'DM Sans',sans-serif;font-size:.62rem;opacity:.85;margin-left:.15rem;}
-  .odds-badge{display:inline-block;font-size:.55rem;font-weight:600;padding:.1rem .35rem;border-radius:8px;margin-left:.3rem;vertical-align:middle;letter-spacing:.02em;}
-  .odds-badge.live{background:rgba(0,200,83,.15);color:#00c853;}
-  .odds-badge.est{background:rgba(107,114,128,.12);color:#6b7280;}
+  .odds-zap{color:#fff;font-size:.7rem;margin-left:.15rem;vertical-align:middle;}
+  .odds-badge.est{display:inline-block;font-size:.55rem;font-weight:600;padding:.1rem .35rem;border-radius:8px;margin-left:.3rem;vertical-align:middle;background:rgba(107,114,128,.12);color:#6b7280;flex-shrink:0;}
   .fixture-probs{display:flex;gap:.4rem;font-size:.72rem;flex-shrink:0;}
   .fixture-probs span{padding:.1rem .4rem;border-radius:99px;background:#f3f4f6;}
   @media(max-width:700px){.fixture-probs{display:none;}}
@@ -1061,16 +1060,16 @@ function renderFixtures(mode){
       const [yr,mo,dy] = f.date.split('-');
       const shortDate = `${dy}/${mo}/${yr.slice(2)}`;
       const conf1 = parseFloat(f.confidence).toFixed(1);
-      const oddsBadge = f.odds_source === 'odds_api'
-        ? '<span class="odds-badge live" title="Using real-time bookmaker odds">Live Odds ⚡</span>'
-        : '<span class="odds-badge est" title="Using ELO-derived estimate (no live odds available)">Est.</span>';
+      const isLive = f.odds_source === 'odds_api';
+      const oddsInline = isLive ? ' <span class="odds-zap" title="Using real-time bookmaker odds">⚡</span>' : '';
+      const oddsEst = isLive ? '' : '<span class="odds-badge est" title="Using ELO-derived estimate">Est.</span>';
       html += `<div class="fixture-row">
         <div class="fixture-date">${shortDate}</div>
         <div class="fixture-teams">
           <div class="fixture-team-line">${homeCrest}<span class="ha-label">H</span><span class="fixture-team-name">${f.home}</span>${formDots(f.home_form)}</div>
           <div class="fixture-team-line">${awayCrest}<span class="ha-label">A</span><span class="fixture-team-name">${f.away}</span>${formDots(f.away_form)}</div>
         </div>
-        <div class="fixture-pred ${f.prediction}">${predLabel} <span class="fixture-conf-inline">${conf1}%</span> ${oddsBadge}</div>
+        <div class="fixture-pred ${f.prediction}">${predLabel} <span class="fixture-conf-inline">${conf1}%</span>${oddsInline}</div>${oddsEst}
         <div class="fixture-probs">
           <span>H ${p.H}%</span>
           <span>D ${p.D}%</span>
