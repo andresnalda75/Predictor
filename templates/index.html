@@ -310,7 +310,7 @@
       </div>
       <div style="overflow-x:auto">
         <table class="data-table">
-          <thead><tr><th>#</th><th>Team</th><th title="Seasons this team appeared in our training data">EPL Seasons</th><th title="Matches from our 8-season holdout test set">Test Games</th><th title="Live predictions made this season">2025/26</th><th>Pre-Match</th><th>In-Game</th></tr></thead>
+          <thead><tr><th>#</th><th>Team</th><th title="Seasons this team appeared in our training data">EPL Seasons</th><th title="Matches from our 8-season holdout test set">Test Games</th><th title="Live predictions made this season">2025/26</th><th>Pre-Match</th></tr></thead>
           <tbody id="teams-tbody"><tr><td colspan="7" class="loading">Loading…</td></tr></tbody>
         </table>
       </div>
@@ -628,7 +628,6 @@ function renderTeams(data){
       <td>${t.historical}</td>
       <td>${t.this_season}</td>
       <td>${accPill(t.pre_accuracy)}</td>
-      <td>${accPill(t.ing_accuracy)}</td>
     </tr>`;}).join('');
 }
 
