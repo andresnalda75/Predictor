@@ -196,6 +196,11 @@
   .zone-el{background:#eff6ff;}
   .zone-conf{background:#fffbeb;}
   .zone-rel{background:#fff1f2;}
+  .standings-table th.sortable{cursor:pointer;user-select:none;position:relative;}
+  .standings-table th.sortable:hover{color:var(--epl);}
+  .sort-arrow{font-size:.6rem;margin-left:.15rem;opacity:.6;}
+  .standings-table th.active-sort{color:var(--epl);}
+  .standings-table th.active-sort .sort-arrow{opacity:1;}
   .standings-legend{display:flex;gap:1rem;flex-wrap:wrap;font-size:.78rem;color:var(--muted);margin-top:1rem;}
   .legend-dot{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px;vertical-align:middle;}
   .team-name-cell{display:flex;align-items:center;gap:.5rem;font-weight:600;}
@@ -416,19 +421,20 @@
         <table class="standings-table">
           <thead>
             <tr>
-              <th>#</th>
+              <th class="sortable" data-col="position">#</th>
               <th>Team</th>
-              <th>P</th>
-              <th>W</th>
-              <th>D</th>
-              <th>L</th>
-              <th>GF</th>
-              <th>GA</th>
-              <th>GD</th>
-              <th>Pts</th>
+              <th class="sortable active-sort" data-col="points" data-dir="desc">PTS <span class="sort-arrow">▼</span></th>
+              <th class="sortable" data-col="played">P</th>
+              <th class="sortable" data-col="won">W</th>
+              <th class="sortable" data-col="drawn">D</th>
+              <th class="sortable" data-col="lost">L</th>
+              <th class="sortable" data-col="gf">GF</th>
+              <th class="sortable" data-col="ga">GA</th>
+              <th class="sortable" data-col="gd">GD</th>
+              <th>Form</th>
             </tr>
           </thead>
-          <tbody id="standings-tbody"><tr><td colspan="10" class="loading">Loading…</td></tr></tbody>
+          <tbody id="standings-tbody"><tr><td colspan="11" class="loading">Loading…</td></tr></tbody>
         </table>
       </div>
       <div class="standings-legend">
@@ -889,16 +895,50 @@ if(savedTab && document.getElementById(savedTab)){
 </script>
 
 <script>
+let _standingsData = [];
+let _standingsSortCol = 'points';
+let _standingsSortDir = 'desc';
+
 async function loadStandings(){
   window._standingsLoaded = true;
   const d = await fetch('/api/standings').then(r=>r.json());
   if(d.error){
     document.getElementById('standings-tbody').innerHTML =
-      `<tr><td colspan="10" style="text-align:center;color:var(--muted);padding:2rem">${d.error}</td></tr>`;
+      `<tr><td colspan="11" style="text-align:center;color:var(--muted);padding:2rem">${d.error}</td></tr>`;
     return;
   }
-  const total = d.length;
-  document.getElementById('standings-tbody').innerHTML = d.map(row=>{
+  _standingsData = d;
+  renderStandings();
+  // Bind sort click handlers
+  document.querySelectorAll('.standings-table th.sortable').forEach(th=>{
+    th.addEventListener('click', ()=>{
+      const col = th.dataset.col;
+      if(_standingsSortCol === col){
+        _standingsSortDir = _standingsSortDir === 'desc' ? 'asc' : 'desc';
+      } else {
+        _standingsSortCol = col;
+        _standingsSortDir = 'desc';
+      }
+      // Update header UI
+      document.querySelectorAll('.standings-table th.sortable').forEach(h=>{
+        h.classList.remove('active-sort');
+        const arrow = h.querySelector('.sort-arrow');
+        if(arrow) arrow.remove();
+      });
+      th.classList.add('active-sort');
+      th.insertAdjacentHTML('beforeend', ` <span class="sort-arrow">${_standingsSortDir==='desc'?'▼':'▲'}</span>`);
+      renderStandings();
+    });
+  });
+}
+
+function renderStandings(){
+  const data = [..._standingsData].sort((a,b)=>{
+    const av = a[_standingsSortCol], bv = b[_standingsSortCol];
+    return _standingsSortDir === 'desc' ? bv - av : av - bv;
+  });
+  const total = data.length;
+  document.getElementById('standings-tbody').innerHTML = data.map((row,i)=>{
     const pos = row.position;
     let zoneClass = '';
     if(pos <= 4)            zoneClass = 'zone-cl';
@@ -907,9 +947,11 @@ async function loadStandings(){
     else if(pos > total-3)  zoneClass = 'zone-rel';
     const gd = row.gd > 0 ? '+'+row.gd : row.gd;
     const crest = row.crest ? `<img src="${row.crest}" style="width:20px;height:20px;object-fit:contain;flex-shrink:0">` : '';
+    const form = row.form ? row.form.map(r=>`<span class="form-dot ${r}" title="${r}"></span>`).join('') : '';
     return `<tr class="${zoneClass}">
       <td style="color:var(--muted);font-weight:600">${pos}</td>
-      <td><div class="team-name-cell">${crest}<span>${row.team||Object.keys(row)[0]}</span></div></td>
+      <td><div class="team-name-cell">${crest}<span>${row.team}</span></div></td>
+      <td class="pts">${row.points}</td>
       <td>${row.played}</td>
       <td style="color:var(--green);font-weight:600">${row.won}</td>
       <td style="color:var(--muted)">${row.drawn}</td>
@@ -917,7 +959,7 @@ async function loadStandings(){
       <td>${row.gf}</td>
       <td>${row.ga}</td>
       <td style="font-weight:600">${gd}</td>
-      <td class="pts">${row.points}</td>
+      <td><span class="form-dots">${form}</span></td>
     </tr>`;
   }).join('');
 }

@@ -598,7 +598,7 @@ def api_standings():
     if not standings_cache:
         return jsonify({"error": "Standings unavailable — live data failed to load"})
     table = sorted(
-        [{"team": name, **data} for name, data in standings_cache.items()],
+        [{"team": name, "form": get_form_list(name), **data} for name, data in standings_cache.items()],
         key=lambda x: x["position"]
     )
     return jsonify(table)
