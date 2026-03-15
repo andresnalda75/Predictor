@@ -100,10 +100,35 @@ Biggest single accuracy jump in project history (+1.32pp).
 
 **Plan:** Try again in a combined retrain with FIFA + Transfermarkt + referee features, using 300-trial direct holdout Optuna (not walk-forward CV).
 
+### Combined Retrain Results (FAILED — do not deploy)
+
+- FIFA + Transfermarkt + match stakes + referee = 37 features
+- 58.27% via direct 300-trial Optuna — still below 59.11% champion (−0.84pp)
+- Optuna converges at trial 71, suggesting feature set ceiling
+- Referee features dropped by RFE entirely
+- New features survive RFE but add noise for Optuna
+- 5-season training window deprioritised — ELO/Pi-ratings already encode recency
+
+### New Pipelines Built (ready for future retrains)
+
+| Script | Data | Features |
+|---|---|---|
+| `scripts/fetch_referees.py` | Referee stats, 51 unique refs | 3 features |
+| `scripts/fetch_transfermarkt.py` | Squad market values, 20 teams × 11 seasons | 3 features |
+| `scripts/fetch_fifa_ratings.py` | FC 25 real ratings from Kaggle | 9 features |
+| Match stakes (derived) | Points gap to relegation/CL/title | 7 features |
+
+### Documentation Created
+
+- `docs/MARKETING_STRATEGY.md` — full channel playbook (Reddit, Substack, Twitter, podcasts)
+- `docs/ARCHITECTURE_ROADMAP.md` — technical roadmap (GitHub Action, API tier, multi-league)
+- `docs/MODEL_RESEARCH.md` — research-backed feature pipeline and what won't work
+
 ### Next Session Priorities
 
-1. Transfermarkt squad market values — scrape free data, add to feature set
-2. Referee features — already in football-data.co.uk CSV, zero effort
-3. Combined retrain: FIFA + Transfermarkt + referee + 300-trial direct Optuna
-4. GitHub Action — weekly auto-retrain
-5. A4 value betting — `ODDS_API_KEY` available
+1. GitHub Action — weekly auto-retrain, +0.32%/week compound
+2. A4 value betting — `ODDS_API_KEY` ready
+3. Dixon-Coles P(draw) hybrid feature — est. +10–15% draw recall
+4. Custom draw threshold — 5 lines of code
+5. Try time-weighted training — weight recent seasons more
+6. Teams table mobile column fix

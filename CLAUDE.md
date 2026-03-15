@@ -124,7 +124,8 @@ Current draw recall is 0% — the model never predicts draws. This is the single
 | days_rest / momentum features | Dropped by RFE (2026-03-15) | Not predictive enough — xG and odds features dominate |
 | 100 Optuna trials | Missed best params | Best found at trial 247 of 300 — always run 300+ trials |
 | FIFA ratings alone (31 features) | 57.31% holdout, −1.80pp vs 59.11% champion | 6 of 9 FIFA features survived RFE but Optuna found shallow trees (max_depth=3) vs champion's deep trees (max_depth=7). Walk-forward CV Optuna finds conservative params. |
-| Combined FIFA+Transfermarkt+match stakes+referee (37 features) | 58.27% via direct Optuna, −0.84pp vs 59.11% champion | New features survive RFE but add noise for Optuna. Referee features dropped by RFE entirely. Try encoding squad value as ratio vs opponent rather than normalized absolute value. |
+| Combined FIFA+Transfermarkt+match stakes+referee (37 features) | 58.27% via direct 300-trial Optuna, −0.84pp vs 59.11% champion | New features survive RFE but Optuna converges at trial 71, suggesting feature set ceiling. Referee features dropped by RFE entirely. |
+| 5-season training window | Not tried, deprioritised | ELO/Pi-ratings already encode recency. GitHub Action compound gains are better ROI than windowing experiments. |
 
 ### TESTING PROTOCOL — REQUIRED BEFORE DEPLOYING ANY NEW MODEL
 
@@ -222,11 +223,12 @@ These features are computed at prediction time but NOT yet in the trained model'
 
 ## Next Session Priorities
 
-1. **A3:** Transfermarkt squad market values — scrape free data, add to feature set
-2. **A3:** Referee features — already in football-data.co.uk CSV, zero effort to extract
-3. **A3:** Combined retrain: FIFA + Transfermarkt + referee + 300-trial direct holdout Optuna (not walk-forward CV)
-4. **A3:** GitHub Action — weekly auto-retrain for compound gain
-5. **A4:** Value betting — `ODDS_API_KEY` available, The Odds API already integrated
+1. **A3:** GitHub Action — weekly auto-retrain, +0.32%/week compound gain
+2. **A4:** Value betting — `ODDS_API_KEY` ready, The Odds API already integrated
+3. **A3:** Dixon-Coles P(draw) hybrid feature — est. +10–15% draw recall
+4. **A3:** Custom draw threshold — 5 lines of code, test post-retrain
+5. **A3:** Try time-weighted training — weight recent seasons more heavily
+6. **A1:** Teams table mobile column fix
 
 ---
 
