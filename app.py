@@ -313,15 +313,15 @@ def get_h2h_record(home, away, n=10):
 
 def get_implied_odds(elo_home, elo_away, home=None, away=None):
     """Get implied probabilities from real bookmaker odds (The Odds API) with ELO fallback.
-    Returns (implied_home, implied_draw, implied_away, home_edge, favourite).
-    Logs which source was used for each prediction."""
+    Returns (implied_home, implied_draw, implied_away, home_edge, favourite, source).
+    source is 'odds_api' or 'elo_proxy'."""
     if home and away:
         imp_h, imp_d, imp_a, h_edge, fav, source = get_match_odds(
             home, away, elo_home, elo_away
         )
         log.info("Odds for %s vs %s: H=%.3f D=%.3f A=%.3f [%s]",
                  home, away, imp_h, imp_d, imp_a, source)
-        return imp_h, imp_d, imp_a, h_edge, fav
+        return imp_h, imp_d, imp_a, h_edge, fav, source
 
     # No team names provided — ELO proxy only
     exp_h = 1 / (1 + 10 ** ((elo_away - elo_home) / 400))
@@ -334,7 +334,7 @@ def get_implied_odds(elo_home, elo_away, home=None, away=None):
     probs = [p_home, p_draw, p_away]
     favourite = int(np.argmax(probs))
     log.info("Odds (ELO proxy, no team names): H=%.3f D=%.3f A=%.3f", p_home, p_draw, p_away)
-    return p_home, p_draw, p_away, home_edge, favourite
+    return p_home, p_draw, p_away, home_edge, favourite, "elo_proxy"
 
 @app.route("/ping")
 def ping():
@@ -483,7 +483,7 @@ def api_predict():
     h2h_hw, h2h_d, h2h_aw = get_h2h_record(home, away)
 
     # Bookmaker odds (real from The Odds API, ELO fallback)
-    imp_h, imp_d, imp_a, h_edge, fav = get_implied_odds(elo_home, elo_away, home, away)
+    imp_h, imp_d, imp_a, h_edge, fav, _src = get_implied_odds(elo_home, elo_away, home, away)
 
     feat_dict = {
         "home_form_pts":h_pts,"home_form_gf":h_gf,"home_form_ga":h_ga,
@@ -639,8 +639,8 @@ def api_predict_fixtures():
             # H2H record
             h2h_hw, h2h_d, h2h_aw = get_h2h_record(home, away)
 
-            # Bookmaker odds (ELO-derived approximation for live predictions)
-            imp_h, imp_d, imp_a, h_edge, fav = get_implied_odds(elo_home, elo_away)
+            # Bookmaker odds (real from The Odds API, ELO fallback)
+            imp_h, imp_d, imp_a, h_edge, fav, odds_source = get_implied_odds(elo_home, elo_away, home, away)
 
             feat_dict = {
                 "home_form_pts":h_pts,"home_form_gf":h_gf,"home_form_ga":h_ga,
@@ -692,6 +692,7 @@ def api_predict_fixtures():
                 "away_crest": fix.get("away_crest", ""),
                 "home_form": get_form_list(home),
                 "away_form": get_form_list(away),
+                "odds_source": odds_source,
             })
         except Exception as e:
             results.append({
