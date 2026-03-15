@@ -318,6 +318,10 @@ def get_implied_odds(elo_home, elo_away):
     favourite = int(np.argmax(probs))  # 0=H, 1=D, 2=A
     return p_home, p_draw, p_away, home_edge, favourite
 
+@app.route("/ping")
+def ping():
+    return "pong", 200
+
 @app.route("/health")
 def health():
     return jsonify({

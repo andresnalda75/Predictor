@@ -139,7 +139,7 @@ Current draw recall is 0% — the model never predicts draws. This is the single
 - hist_features.csv rebuilt with 36 features + join keys (date, home_team, away_team)
 - Pi-team-ratings.csv for live predictions
 
-### Agent 3 — `model-improvements` (this agent)
+### Agent 3 — `model-improvements`
 **Branch:** `model-improvements`
 **Goal:** Improve model accuracy beyond 57.79%
 **Completed:**
