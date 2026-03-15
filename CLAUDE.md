@@ -267,6 +267,30 @@ These features are computed at prediction time but NOT yet in the trained model'
 #### 5. Footer — DONE
 
 - ✅ Footer already shows '57.8%' (fixed in prior commit)
+
+#### 6. COVID Season Audit (2026-03-15) — DATA INCLUDES COVID
+
+**Finding: the "no COVID" claim is FALSE.** COVID season data was never excluded at the data level. The label in `retrain_model.py` line 618 and CLAUDE.md header is aspirational, not enforced.
+
+| File | Total Rows | 1920 (COVID) Rows | 2021 (partial COVID) Rows | Status |
+|---|---|---|---|---|
+| `data/hist_matches.csv` | 4,180 | 380 | 380 | ⚠️ PRESENT |
+| `data/hist_features.csv` | 4,166 | 380 | 379 | ⚠️ PRESENT |
+| `data/pi_ratings.csv` | 4,180 | 380 | 380 | ⚠️ PRESENT |
+| `data/validation.json` test set (834) | 834 | 0 | 0 | ✅ CLEAN |
+| xG coverage for 1920 | — | 380/380 have xG | 380/380 | ⚠️ PRESENT |
+
+**Details:**
+- Data actually has **11 seasons** (1415–2425), not 8. The "8 seasons" count is also wrong.
+- Training set (first 3,332 rows) includes 759 COVID-era rows (380 from 1920 + 379 from 2021)
+- Test set (last 834 rows, 2023-04-21 to 2025-05-25) has zero COVID rows — evaluation is clean
+- `retrain_model.py` `build_features()` has no season exclusion filter — it processes all rows
+- 2020/21 was also affected: matches played behind closed doors, home advantage significantly reduced
+
+**Decision needed before next retrain:**
+- **Option A:** Exclude 1920 from training (and optionally 2021). May improve accuracy since home advantage was distorted. Requires re-running Pi-ratings and rebuilding features.
+- **Option B:** Keep data, fix all labels to say "11 seasons (2014–2025, includes COVID)" — honest but may hurt accuracy
+- **Option C:** Keep data, add a `covid_flag` feature (1 for 1920/2021, 0 otherwise) so the model can learn the COVID effect rather than being confused by it
 - ✅ Added tooltip on hover explaining: "Accuracy on a 20% chronological holdout test set (834 matches) from 8 EPL seasons (2017–2025)"
 
 ---
