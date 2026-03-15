@@ -309,7 +309,7 @@
         <div class="hero-support-stat">
           <div class="hero-support-value" id="hero-matches">532</div>
           <div class="hero-support-label">test matches<br>evaluated</div>
-          <div style="font-size:.65rem;opacity:.45;margin-top:.25rem">holdout set · 8 seasons</div>
+          <div style="font-size:.65rem;opacity:.45;margin-top:.25rem">holdout set · 11 seasons</div>
         </div>
       </div>
     </div>
@@ -322,7 +322,7 @@
   <section id="teams" class="section">
     <div class="card">
       <div class="card-title">Prediction Accuracy by Team</div>
-      <p style="font-size:.82rem;color:var(--muted);margin-bottom:1rem">How accurately did we predict each team? Historical = held-out test matches from 8 seasons (2017–2025). This Season = live predictions since March 2026.</p>
+      <p style="font-size:.82rem;color:var(--muted);margin-bottom:1rem">How accurately did we predict each team? Historical = held-out test matches from 11 seasons (2014–2025). This Season = live predictions since March 2026.</p>
       <div class="seg-toggle">
         <button class="seg-btn active" onclick="filterTeams('all',this)">All</button>
         <button class="seg-btn" onclick="filterTeams('good',this)">Above 40%</button>
@@ -334,7 +334,7 @@
           <tbody id="teams-tbody"><tr><td colspan="7" class="loading">Loading…</td></tr></tbody>
         </table>
       </div>
-      <p style="font-size:.76rem;color:var(--muted);margin-top:.75rem;font-style:italic">Test Games: how many matches this team appeared in our held-out test set (834 total across 20 teams ≈ 83 per team). Teams with fewer Test Games were promoted/relegated during 2017–2025. 2025/26 accuracy grows as the season progresses — small sample, treat with caution. * = recently promoted team with limited test history.</p>
+      <p style="font-size:.76rem;color:var(--muted);margin-top:.75rem;font-style:italic">Test Games: how many matches this team appeared in our held-out test set (834 total across 20 teams ≈ 83 per team). Teams with fewer Test Games were promoted/relegated during 2014–2025. 2025/26 accuracy grows as the season progresses — small sample, treat with caution. * = recently promoted team with limited test history.</p>
     </div>
   </section>
   <section id="confidence" class="section">
@@ -376,7 +376,7 @@
     <div class="card">
       <div class="card-title">About this prediction</div>
       <p style="font-size:.88rem;line-height:1.7;color:#374151">
-        Uses the <strong>pre-match model (<span id="about-pre-acc">…</span> accuracy)</strong> trained on 8 seasons of EPL data (2017–2025).
+        Uses the <strong>pre-match model (<span id="about-pre-acc">…</span> accuracy)</strong> trained on 11 seasons of EPL data (2014–2025).
         Features include last-5 form, home/away specific form, current league position and points.
       </p>
       <p style="font-size:.78rem;line-height:1.5;color:var(--muted);margin-top:.5rem;font-style:italic">
@@ -424,7 +424,7 @@
       <div class="card-title">About this model</div>
       <p style="font-size:.88rem;line-height:1.7;color:#374151">
         The in-game model uses the half time score alongside team form and league position,
-        trained on 8 seasons of EPL data (2017–2025, COVID excluded). It accounts for the high
+        trained on 11 seasons of EPL data (2014–2025). It accounts for the high
         rate of second-half turnarounds to predict the final result from any half-time scoreline.
       </p>
       <p style="font-size:.78rem;line-height:1.5;color:var(--muted);margin-top:.5rem;font-style:italic">
@@ -521,7 +521,7 @@
   </section>
 </main>
 <footer>
-  EPL Predictor v1.2.0 &nbsp;·&nbsp; <span title="Accuracy on a 20% chronological holdout test set (834 matches) from 8 EPL seasons (2017–2025). The model never saw these matches during training.">Model accuracy 57.8%</span> &nbsp;·&nbsp; Built with <a href="https://claude.ai/claude-code" target="_blank" rel="noopener">Claude Code</a> &nbsp;·&nbsp; March 2026
+  EPL Predictor v1.2.0 &nbsp;·&nbsp; <span title="Accuracy on a 20% chronological holdout test set (834 matches) from 11 EPL seasons (2014–2025). The model never saw these matches during training.">Model accuracy 57.8%</span> &nbsp;·&nbsp; Built with <a href="https://claude.ai/claude-code" target="_blank" rel="noopener">Claude Code</a> &nbsp;·&nbsp; March 2026
 </footer>
 <script>
 let teamsData=[];
@@ -560,14 +560,14 @@ function accPill(acc){
 async function loadOverview(){
   const d=await fetch('/api/overview').then(r=>r.json());
   document.getElementById('overview-stats').innerHTML=`
-    <div class="stat-card"><div class="stat-label">Test Matches</div><div class="stat-value">${d.total_matches}</div><div class="stat-sub">20% holdout · 8 seasons</div></div>
+    <div class="stat-card"><div class="stat-label">Test Matches</div><div class="stat-value">${d.total_matches}</div><div class="stat-sub">20% holdout · 11 seasons</div></div>
     <div class="stat-card"><div class="stat-label">Pre-Match Accuracy</div><div class="stat-value ${d.pre_accuracy>=45?'green':'amber'}">${d.pre_accuracy}%</div><div class="stat-sub">on held-out test data</div></div>
     <div class="stat-card"><div class="stat-label">In-Game Accuracy</div><div class="stat-value green">${d.ing_accuracy}%</div><div class="stat-sub">with half-time score</div></div>
     <div class="stat-card"><div class="stat-label">Pro Benchmark</div><div class="stat-value amber">54–56%</div><div class="stat-sub">industry standard</div></div>`;
   // Add methodology footnote below overview stats
   if(!document.getElementById('overview-methodology')){
     document.getElementById('overview-stats').insertAdjacentHTML('afterend',
-      '<p id="overview-methodology" style="font-size:.75rem;color:var(--muted);margin:.75rem 0 0;line-height:1.5">Accuracy measured on a chronological 20% holdout set (most recent ~2 seasons) that the model never saw during training. Trained on 8 EPL seasons (2017\u20132025, COVID excluded). Promoted teams with fewer seasons may have less reliable predictions.</p>');
+      '<p id="overview-methodology" style="font-size:.75rem;color:var(--muted);margin:.75rem 0 0;line-height:1.5">Accuracy measured on a chronological 20% holdout set (most recent ~2 seasons) that the model never saw during training. Trained on 11 EPL seasons (2014\u20132025). Promoted teams with fewer seasons may have less reliable predictions.</p>');
   }
   const outcomes={'H':'Home Wins','D':'Draws','A':'Away Wins'};
   document.getElementById('outcome-bars').innerHTML=Object.entries(d.by_outcome).map(([k,v])=>`
@@ -704,7 +704,7 @@ async function loadValidation(){
       <div class="stat-label">Overall Accuracy</div>
       <div class="stat-value ${acc>=50?'green':'amber'}">${acc}%</div>
       <div class="stat-sub">${ov.total_matches} test matches</div>
-      <div style="font-size:.7rem;color:var(--muted);margin-top:.25rem">holdout set from 8 seasons (2017–2025)</div>
+      <div style="font-size:.7rem;color:var(--muted);margin-top:.25rem">holdout set from 11 seasons (2014–2025)</div>
     </div>
     <div class="stat-card">
       <div class="stat-label">Beats Random By</div>
@@ -722,7 +722,7 @@ async function loadValidation(){
       <div class="stat-sub">not luck</div>
     </div>`;
   document.getElementById('v-hero').insertAdjacentHTML('afterend',
-    '<p style="font-size:.78rem;color:var(--muted);margin:-0.75rem 0 1.25rem;line-height:1.5"><strong>Methodology:</strong> 8 EPL seasons (2017\u20132025, COVID excluded) split chronologically — 80% training, 20% holdout test. All stats on this page are from the holdout set the model never saw. Walk-forward cross-validation (56.4%) confirms robustness. Promoted teams with &lt;3 seasons may have less reliable predictions.</p>');
+    '<p style="font-size:.78rem;color:var(--muted);margin:-0.75rem 0 1.25rem;line-height:1.5"><strong>Methodology:</strong> 11 EPL seasons (2014\u20132025) split chronologically — 80% training, 20% holdout test. All stats on this page are from the holdout set the model never saw. Walk-forward cross-validation (56.4%) confirms robustness. Promoted teams with &lt;3 seasons may have less reliable predictions.</p>');
 
   // Accuracy by predicted outcome — from live /api/overview
   const outcomeLabels = {H:'Home Win',D:'Draw',A:'Away Win'};
@@ -774,8 +774,8 @@ async function loadValidation(){
      body:`Only ${drawRecallPct}% recall on draws — an industry-wide problem. Even professional models struggle to predict draws reliably.`},
     {bg:'#f0fdf4',border:'#bbf7d0',icon:'✅',title:'Not luck',
      body:`p-value of 5×10⁻²⁶ means this accuracy is statistically impossible by chance. The model has learned real patterns.`},
-    {bg:'#f0fdf4',border:'#bbf7d0',icon:'✅',title:'8 seasons of data',
-     body:`Trained on 8 EPL seasons (2017–2025), COVID years excluded. Enough data to learn patterns without including the anomalous 2020 bubble season.`},
+    {bg:'#f0fdf4',border:'#bbf7d0',icon:'✅',title:'11 seasons of data',
+     body:`Trained on 11 EPL seasons (2014–2025). Enough data to learn robust patterns across multiple eras of the league.`},
     {bg:'#fff8e1',border:'#fde68a',icon:'⚠️',title:'Live ELO is approximate',
      body:`ELO ratings for the current season use last known historical values. Accuracy will improve as the season progresses and more live data is available.`},
   ];
