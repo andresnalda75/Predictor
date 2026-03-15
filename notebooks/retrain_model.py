@@ -129,6 +129,41 @@ def get_rolling_xg(df_up_to, team, n=5):
     return xg_for / count, xg_against / count
 
 
+def get_days_rest(df_up_to, team, match_date):
+    """Days since the team's most recent match before match_date."""
+    tm = df_up_to[((df_up_to["home_team"] == team) | (df_up_to["away_team"] == team))]
+    if len(tm) == 0:
+        return 7  # default: one week
+    last_date = pd.to_datetime(tm.iloc[-1]["date"])
+    match_dt = pd.to_datetime(match_date)
+    days = (match_dt - last_date).days
+    return max(days, 0)
+
+
+def get_momentum(df_up_to, team, n=5):
+    """Form momentum: PPG in last n matches minus PPG in prior n matches.
+    Positive = rising form, negative = falling form."""
+    tm = df_up_to[((df_up_to["home_team"] == team) | (df_up_to["away_team"] == team))]
+    if len(tm) < 2:
+        return 0.0
+    recent = tm.tail(n)
+    older = tm.iloc[max(0, len(tm) - 2 * n):max(0, len(tm) - n)]
+
+    def _ppg(matches):
+        if len(matches) == 0:
+            return 0.0
+        pts = 0
+        for _, r in matches.iterrows():
+            ih = r["home_team"] == team
+            if (ih and r["result"] == "H") or (not ih and r["result"] == "A"):
+                pts += 3
+            elif r["result"] == "D":
+                pts += 1
+        return pts / len(matches)
+
+    return round(_ppg(recent) - _ppg(older), 3)
+
+
 def get_cumulative_standing(df_season):
     """Build league table from a season's completed matches."""
     table = {}
@@ -257,6 +292,11 @@ def build_features(matches_df, pi_df):
             "away_sot_avg": a_sot, "away_sot_against_avg": a_sota,
             "shots_diff": h_sh - a_sh, "sot_diff": h_sot - a_sot,
             "corners_diff": (row.get("hc", 0) or 0) - (row.get("ac", 0) or 0),
+            # Dormant features — now activated
+            "home_days_rest": get_days_rest(df_before, home, row["date"]),
+            "away_days_rest": get_days_rest(df_before, away, row["date"]),
+            "home_momentum": get_momentum(df_before, home),
+            "away_momentum": get_momentum(df_before, away),
         }
 
         # xG rolling averages (5-game)
