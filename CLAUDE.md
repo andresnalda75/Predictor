@@ -22,6 +22,7 @@ Flask web app deployed on Railway that predicts EPL match outcomes using XGBoost
 **Environment variables:**
 - `FOOTBALL_DATA_API_KEY` — football-data.org API v4 key (match results, standings, fixtures)
 - `APIFOOTBALL_KEY` — API-Football key (injury data). Optional; app degrades gracefully without it. Free tier: 100 req/day. Sign up at api-sports.io
+- `ODDS_API_KEY` — The Odds API key (real bookmaker odds for live predictions). Optional; falls back to ELO-derived proxy without it. Free tier: 500 req/month. Sign up at the-odds-api.com
 
 ---
 

@@ -59,6 +59,7 @@ def _get_cached_fixtures():
     return _fixtures_cache
 from live_data import fetch_current_season, fetch_standings, fetch_upcoming, CREST_MAP
 from injury_data import load_injuries, get_injury_count
+from scripts.fetch_live_odds import fetch_odds, get_match_odds
 
 # Load live season data
 try:
@@ -77,6 +78,13 @@ if injury_cache:
     print(f"✅ Injury data loaded: {sum(injury_cache.values())} injuries across {len(injury_cache)} teams")
 else:
     print("⚠️ Injury data unavailable (set APIFOOTBALL_KEY to enable)")
+
+# Pre-warm live odds cache (requires ODDS_API_KEY env var)
+_odds_cache = fetch_odds()
+if _odds_cache:
+    print(f"✅ Live odds loaded: {len(_odds_cache)} matches from The Odds API")
+else:
+    print("⚠️ Live odds unavailable (set ODDS_API_KEY to enable, falls back to ELO proxy)")
 
 BASE = os.path.dirname(os.path.abspath(__file__)) if "__file__" in dir() else "/content/epl_dashboard"
 
@@ -303,11 +311,20 @@ def get_h2h_record(home, away, n=10):
     draws  = int((matches["result"]=="D").sum())
     return h_wins, draws, a_wins
 
-def get_implied_odds(elo_home, elo_away):
-    """Approximate B365-style implied probabilities from ELO ratings.
-    Returns (implied_home, implied_draw, implied_away, home_edge, favourite)."""
+def get_implied_odds(elo_home, elo_away, home=None, away=None):
+    """Get implied probabilities from real bookmaker odds (The Odds API) with ELO fallback.
+    Returns (implied_home, implied_draw, implied_away, home_edge, favourite).
+    Logs which source was used for each prediction."""
+    if home and away:
+        imp_h, imp_d, imp_a, h_edge, fav, source = get_match_odds(
+            home, away, elo_home, elo_away
+        )
+        log.info("Odds for %s vs %s: H=%.3f D=%.3f A=%.3f [%s]",
+                 home, away, imp_h, imp_d, imp_a, source)
+        return imp_h, imp_d, imp_a, h_edge, fav
+
+    # No team names provided — ELO proxy only
     exp_h = 1 / (1 + 10 ** ((elo_away - elo_home) / 400))
-    # Allocate draw probability — higher when teams are closer in strength
     elo_gap = abs(elo_home - elo_away)
     draw_prob = 0.26 * max(0.5, 1 - elo_gap / 600)
     p_home = exp_h * (1 - draw_prob)
@@ -315,7 +332,8 @@ def get_implied_odds(elo_home, elo_away):
     p_draw = 1 - p_home - p_away
     home_edge = p_home - (1.0 / 3)
     probs = [p_home, p_draw, p_away]
-    favourite = int(np.argmax(probs))  # 0=H, 1=D, 2=A
+    favourite = int(np.argmax(probs))
+    log.info("Odds (ELO proxy, no team names): H=%.3f D=%.3f A=%.3f", p_home, p_draw, p_away)
     return p_home, p_draw, p_away, home_edge, favourite
 
 @app.route("/ping")
@@ -464,8 +482,8 @@ def api_predict():
     # H2H record
     h2h_hw, h2h_d, h2h_aw = get_h2h_record(home, away)
 
-    # Bookmaker odds (ELO-derived approximation for live predictions)
-    imp_h, imp_d, imp_a, h_edge, fav = get_implied_odds(elo_home, elo_away)
+    # Bookmaker odds (real from The Odds API, ELO fallback)
+    imp_h, imp_d, imp_a, h_edge, fav = get_implied_odds(elo_home, elo_away, home, away)
 
     feat_dict = {
         "home_form_pts":h_pts,"home_form_gf":h_gf,"home_form_ga":h_ga,
