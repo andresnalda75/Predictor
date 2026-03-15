@@ -956,7 +956,6 @@ function crestImg(team, size=32){
 
 populateTeamDropdowns();
 loadOverview();
-loadFixtures();
 </script>
 
 <script>
@@ -1024,6 +1023,7 @@ async function loadFixtures(){
   container.classList.add('fixtures-fade-in');
   renderFixtures('all');
 }
+loadFixtures();
 
 function filterFixtures(mode, btn){
   document.querySelectorAll('.fixtures-filter .seg-btn').forEach(b=>b.classList.remove('active'));
