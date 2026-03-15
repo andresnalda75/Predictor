@@ -267,6 +267,7 @@
     <button class="tab-btn" onclick="showTab('validation',this)">Validation</button>
     <button class="tab-btn" onclick="showTab('fixtures',this)">Fixtures</button>
     <button class="tab-btn" onclick="showTab('standings',this)">Standings</button>
+    <button class="tab-btn" onclick="showTab('about',this)">About</button>
   </nav>
   <button class="hamburger" id="hamburger" onclick="toggleMenu()" aria-label="Menu">
     <span></span><span></span><span></span>
@@ -282,6 +283,7 @@
   <button class="tab-btn" onclick="showTab('validation',this)">Validation</button>
   <button class="tab-btn" onclick="showTab('fixtures',this)">Fixtures</button>
   <button class="tab-btn" onclick="showTab('standings',this)">Standings</button>
+  <button class="tab-btn" onclick="showTab('about',this)">About</button>
 </nav>
 <main>
   <section id="overview" class="section active">
@@ -517,6 +519,114 @@
         <span><span class="legend-dot" style="background:var(--amber)"></span>Conference League (7th)</span>
         <span><span class="legend-dot" style="background:#ff1744"></span>Relegation (Bottom 3)</span>
       </div>
+    </div>
+  </section>
+
+  <section id="about" class="section">
+    <div class="card" style="margin-bottom:1rem">
+      <div class="card-title">What This Is</div>
+      <p style="font-size:.9rem;line-height:1.7;color:#374151">
+        EPL Predictor is a side project that predicts English Premier League match outcomes using machine learning.
+        It is not a betting tool. It does not guarantee results. It is an honest attempt to see how far statistical
+        modelling can go with publicly available football data.
+      </p>
+    </div>
+
+    <div class="card" style="margin-bottom:1rem">
+      <div class="card-title">How the Model Works</div>
+      <p style="font-size:.9rem;line-height:1.7;color:#374151">
+        The pre-match model is an <strong>XGBoost gradient-boosted tree classifier</strong> trained on 11 EPL seasons (2014–2025).
+        It predicts three outcomes: Home Win, Draw, or Away Win.
+      </p>
+      <p style="font-size:.88rem;line-height:1.7;color:#374151;margin-top:.75rem">
+        <strong>25 features</strong> are used, including:
+      </p>
+      <ul style="font-size:.88rem;line-height:1.8;color:#374151;margin:.5rem 0 0 1.25rem">
+        <li><strong>Bookmaker implied odds</strong> — Bet365 historical odds converted to implied probabilities (home/draw/away, home edge, favourite indicator)</li>
+        <li><strong>Form</strong> — last 5 matches with exponential decay weighting (points, goals for/against, wins, draws)</li>
+        <li><strong>Home/away specific form</strong> — how each team performs at home vs away</li>
+        <li><strong>League position &amp; points</strong> — current standings, goal difference, points gap</li>
+        <li><strong>ELO ratings</strong> — historical strength ratings calculated from all past results</li>
+        <li><strong>Pi-ratings</strong> — home/away split ratings that capture venue-specific ability</li>
+        <li><strong>Shot statistics</strong> — rolling 5-match averages for shots, shots on target, and defensive stats</li>
+      </ul>
+      <p style="font-size:.88rem;line-height:1.7;color:#374151;margin-top:.75rem">
+        Hyperparameters were tuned with <strong>Optuna</strong> (Bayesian optimisation) and validated with <strong>walk-forward cross-validation</strong>
+        to prevent lookahead bias.
+      </p>
+    </div>
+
+    <div class="card" style="margin-bottom:1rem">
+      <div class="card-title">Accuracy</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:1rem;margin-bottom:1rem">
+        <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:1rem;text-align:center">
+          <div style="font-family:'Archivo Black',sans-serif;font-size:1.6rem;color:#16a34a">57.8%</div>
+          <div style="font-size:.78rem;color:var(--muted)">Holdout test set<br>834 matches</div>
+        </div>
+        <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:1rem;text-align:center">
+          <div style="font-family:'Archivo Black',sans-serif;font-size:1.6rem;color:#16a34a">56.4%</div>
+          <div style="font-size:.78rem;color:var(--muted)">Walk-forward CV<br>robustness check</div>
+        </div>
+        <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:1rem;text-align:center">
+          <div style="font-family:'Archivo Black',sans-serif;font-size:1.6rem;color:#16a34a">+24.5pp</div>
+          <div style="font-size:.78rem;color:var(--muted)">Above random<br>baseline (33.3%)</div>
+        </div>
+        <div style="background:#fff8e1;border:1px solid #fde68a;border-radius:10px;padding:1rem;text-align:center">
+          <div style="font-family:'Archivo Black',sans-serif;font-size:1.6rem;color:#d97706">54–56%</div>
+          <div style="font-size:.78rem;color:var(--muted)">Pro benchmark<br>industry standard</div>
+        </div>
+      </div>
+      <p style="font-size:.82rem;line-height:1.6;color:var(--muted)">
+        The model was trained on the first 80% of matches (chronologically) and tested on the remaining 20% it had never seen.
+        Walk-forward validation re-trains on expanding windows to simulate real deployment. Both numbers are honest — no cherry-picking.
+      </p>
+    </div>
+
+    <div class="card" style="margin-bottom:1rem">
+      <div class="card-title">Honest Limitations</div>
+      <ul style="font-size:.9rem;line-height:1.9;color:#374151;margin:.5rem 0 0 1.25rem">
+        <li><strong>0% draw recall</strong> — the model almost never predicts draws. Draws are 23% of EPL outcomes but the model finds it more profitable to predict Home/Away. This is the single biggest weakness.</li>
+        <li><strong>Live odds are approximated</strong> — the model was trained on real Bet365 historical odds, but live predictions use ELO-derived implied probabilities as a proxy. Live accuracy may be slightly lower than 57.8% until we integrate a real-time odds API.</li>
+        <li><strong>Promoted teams have less data</strong> — teams like Ipswich or Sunderland with only 1–2 EPL seasons in our dataset have fewer training examples. Predictions for these teams are less reliable.</li>
+        <li><strong>No player-level data</strong> — the model knows team form and strength but not who is playing. A key injury or tactical change is invisible to it.</li>
+        <li><strong>Football is inherently unpredictable</strong> — even with perfect data, match outcomes have a ceiling. The difference between 57.8% and a coin flip is meaningful, but it still means 4 in 10 predictions are wrong.</li>
+      </ul>
+    </div>
+
+    <div class="grid-2" style="margin-bottom:1rem">
+      <div class="card">
+        <div class="card-title">Data Sources</div>
+        <ul style="font-size:.88rem;line-height:1.9;color:#374151;margin:.5rem 0 0 1.25rem">
+          <li><strong>football-data.org</strong> — live match results, standings, fixtures (API v4)</li>
+          <li><strong>football-data.co.uk</strong> — historical Bet365 odds (11 seasons of H/D/A odds)</li>
+          <li><strong>ELO &amp; Pi-ratings</strong> — calculated from all historical results</li>
+          <li><strong>API-Football</strong> — pre-match injury counts (optional, degrades gracefully)</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="card-title">Built With</div>
+        <ul style="font-size:.88rem;line-height:1.9;color:#374151;margin:.5rem 0 0 1.25rem">
+          <li><strong>Python</strong> — Flask backend, Pandas data pipeline</li>
+          <li><strong>XGBoost</strong> — gradient-boosted trees with Optuna tuning</li>
+          <li><strong>Railway</strong> — deployment and hosting</li>
+          <li><strong>Claude Code</strong> — AI-assisted development</li>
+          <li><strong>Vanilla JS</strong> — no framework, fast and lightweight frontend</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Track Record</div>
+      <p style="font-size:.9rem;line-height:1.7;color:#374151">
+        Every stat in this app is backed by data you can verify. The
+        <a href="#" onclick="showTab('validation',document.querySelector('.tab-btn'));return false" style="color:var(--epl);font-weight:600">Validation tab</a>
+        shows the full breakdown: accuracy by outcome, confidence bands, and known weaknesses.
+        The <a href="#" onclick="showTab('teams',document.querySelector('.tab-btn'));return false" style="color:var(--epl);font-weight:600">Teams tab</a>
+        shows per-team accuracy with season counts so you can judge sample sizes.
+      </p>
+      <p style="font-size:.82rem;line-height:1.6;color:var(--muted);margin-top:.75rem">
+        We would rather show you an honest 57.8% than a cherry-picked 65%. If a number looks too good, check the sample size.
+      </p>
     </div>
   </section>
 </main>
