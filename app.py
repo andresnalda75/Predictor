@@ -378,18 +378,22 @@ def api_teams():
     for team in ALL_TEAMS:
         sub = test_df[(test_df["home_team"]==team)|(test_df["away_team"]==team)]
         if len(sub) >= 3:
-            # Count distinct seasons this team appears in (test data)
+            # Count distinct seasons this team appears in (all historical data)
             team_matches = hist_df[(hist_df["home_team"]==team)|(hist_df["away_team"]==team)]
             seasons = int(team_matches["season_code"].nunique()) if len(team_matches) else 0
+            # Current season games from live data
+            this_season = 0
+            if live_season is not None and len(live_season) > 0:
+                this_season = int(((live_season["home_team"]==team)|(live_season["away_team"]==team)).sum())
             rows.append({
                 "team": team,
                 "seasons": seasons,
-                "games": len(sub),
+                "historical": len(sub),
+                "this_season": this_season,
                 "pre_accuracy": round(sub["correct"].mean()*100,1),
                 "ing_accuracy": round(sub["correct"].mean()*100,1),
-                "correct": int(sub["correct"].sum())
             })
-    rows.sort(key=lambda x: x["pre_accuracy"], reverse=True)
+    rows.sort(key=lambda x: (-x["seasons"], -x["historical"]))
     return jsonify(rows)
 
 @app.route("/api/confidence")

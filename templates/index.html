@@ -330,11 +330,11 @@
       </div>
       <div style="overflow-x:auto">
         <table class="data-table">
-          <thead><tr><th>#</th><th>Team</th><th>Seasons</th><th>Games</th><th>Pre-Match</th><th>In-Game</th><th>Correct</th></tr></thead>
+          <thead><tr><th>#</th><th>Team</th><th>Seasons</th><th>Historical</th><th>This Season</th><th>Pre-Match</th><th>In-Game</th></tr></thead>
           <tbody id="teams-tbody"><tr><td colspan="7" class="loading">Loading…</td></tr></tbody>
         </table>
       </div>
-      <p style="font-size:.76rem;color:var(--muted);margin-top:.75rem;font-style:italic">* Recently promoted — limited historical data, predictions may be less reliable.<br>Games = matches in the holdout test set (most recent 20% of 8 seasons). Seasons = total EPL seasons in training data.</p>
+      <p style="font-size:.76rem;color:var(--muted);margin-top:.75rem;font-style:italic">* Recently promoted — limited historical data.<br>Historical accuracy measured on holdout test data. This Season shows live predictions since deployment — sample size growing weekly.</p>
     </div>
   </section>
   <section id="confidence" class="section">
@@ -611,10 +611,10 @@ function renderTeams(data){
       <td style="color:var(--muted);font-size:.8rem">${i+1}</td>
       <td style="font-weight:600">${t.team}${promoted?' *':''}</td>
       <td>${t.seasons||'—'}</td>
-      <td>${t.games}</td>
+      <td>${t.historical}</td>
+      <td>${t.this_season}</td>
       <td>${accPill(t.pre_accuracy)}</td>
       <td>${accPill(t.ing_accuracy)}</td>
-      <td>${t.correct}</td>
     </tr>`;}).join('');
 }
 
