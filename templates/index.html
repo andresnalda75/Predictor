@@ -664,6 +664,7 @@ function showTab(name,btn){
   // Close mobile menu after selection
   document.getElementById('mobile-menu').classList.remove('open');
   document.getElementById('hamburger').classList.remove('open');
+  localStorage.setItem('activeTab', name);
   if(name==='overview') loadOverview();
   if(name==='validation') loadValidation();
   if(name==='teams') loadTeams();
@@ -955,6 +956,11 @@ function crestImg(team, size=32){
 
 populateTeamDropdowns();
 loadOverview();
+// Restore last active tab from localStorage (default: fixtures)
+const savedTab = localStorage.getItem('activeTab');
+if(savedTab && document.getElementById(savedTab)){
+  showTab(savedTab);
+}
 </script>
 
 <script>
