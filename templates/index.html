@@ -5,7 +5,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>EPL Predictor</title>
-<meta name="description" content="Predict Premier League match outcomes with machine learning — 57.8% accuracy, above academic SOTA.">
+<meta name="description" content="Predict Premier League match outcomes with machine learning. Above academic SOTA accuracy.">
 <meta name="theme-color" content="#38003c">
 <!-- PWA -->
 <link rel="manifest" href="/static/manifest.json">
@@ -423,15 +423,15 @@
             <tr>
               <th class="sortable" data-col="position">#</th>
               <th>Team</th>
-              <th class="sortable active-sort" data-col="points" data-dir="desc">PTS <span class="sort-arrow">▼</span></th>
+              <th>Form</th>
               <th class="sortable" data-col="played">P</th>
+              <th class="sortable active-sort" data-col="points" data-dir="desc">PTS <span class="sort-arrow">▼</span></th>
               <th class="sortable" data-col="won">W</th>
               <th class="sortable" data-col="drawn">D</th>
               <th class="sortable" data-col="lost">L</th>
               <th class="sortable" data-col="gf">GF</th>
               <th class="sortable" data-col="ga">GA</th>
               <th class="sortable" data-col="gd">GD</th>
-              <th>Form</th>
             </tr>
           </thead>
           <tbody id="standings-tbody"><tr><td colspan="11" class="loading">Loading…</td></tr></tbody>
@@ -483,9 +483,9 @@
     <div class="card" style="margin-bottom:1rem">
       <div class="card-title">Accuracy</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem">
-        <div class="stat-card"><div class="stat-label">Holdout Test Set</div><div class="stat-value green">57.8%</div><div class="stat-sub">834 matches</div></div>
-        <div class="stat-card"><div class="stat-label">Walk-Forward CV</div><div class="stat-value green">56.4%</div><div class="stat-sub">robustness check</div></div>
-        <div class="stat-card"><div class="stat-label">Above Random</div><div class="stat-value green">+24.5pp</div><div class="stat-sub">vs 33.3% baseline</div></div>
+        <div class="stat-card"><div class="stat-label">Holdout Test Set</div><div class="stat-value green" id="meth-holdout-acc">…</div><div class="stat-sub" id="meth-holdout-n">… matches</div></div>
+        <div class="stat-card"><div class="stat-label">Walk-Forward CV</div><div class="stat-value green" id="meth-wf-acc">…</div><div class="stat-sub">robustness check</div></div>
+        <div class="stat-card"><div class="stat-label">Above Random</div><div class="stat-value green" id="meth-above-random">…</div><div class="stat-sub">vs 33.3% baseline</div></div>
         <div class="stat-card"><div class="stat-label">Pro Benchmark</div><div class="stat-value amber">54–56%</div><div class="stat-sub">industry standard</div></div>
       </div>
       <p style="font-size:.82rem;line-height:1.6;color:var(--muted)">
@@ -500,7 +500,7 @@
         <li><strong>0% draw recall</strong> — the model almost never predicts draws. Draws are 23% of EPL outcomes but the model finds it more accurate to predict Home/Away. This is the single biggest weakness.</li>
         <li><strong>Promoted teams have less data</strong> — teams like Ipswich or Sunderland with only 1–2 EPL seasons in our dataset have fewer training examples. Predictions for these teams are less reliable.</li>
         <li><strong>No player-level data</strong> — the model knows team form and strength but not who is playing. A key injury or tactical change is invisible to it.</li>
-        <li><strong>Football is inherently unpredictable</strong> — even with perfect data, match outcomes have a ceiling. The difference between 57.8% and a coin flip is meaningful, but it still means 4 in 10 predictions are wrong.</li>
+        <li><strong>Football is inherently unpredictable</strong> — even with perfect data, match outcomes have a ceiling. The difference between <span id="meth-acc-inline">…</span>% and a coin flip is meaningful, but it still means 4 in 10 predictions are wrong.</li>
       </ul>
     </div>
 
@@ -540,13 +540,13 @@
         shows per-team accuracy with season counts so you can judge sample sizes.
       </p>
       <p style="font-size:.82rem;line-height:1.6;color:var(--muted);margin-top:.75rem">
-        We would rather show you an honest 57.8% than a cherry-picked 65%. If a number looks too good, check the sample size.
+        We would rather show you an honest <span id="meth-acc-honest">…</span>% than a cherry-picked 65%. If a number looks too good, check the sample size.
       </p>
     </div>
   </section>
 </main>
 <footer>
-  EPL Predictor v1.2.0 &nbsp;·&nbsp; <span title="Accuracy on a 20% chronological holdout test set (834 matches) from 11 EPL seasons (2014–2025). The model never saw these matches during training.">Model accuracy 57.8%</span> &nbsp;·&nbsp; Built with <a href="https://claude.ai/claude-code" target="_blank" rel="noopener">Claude Code</a> &nbsp;·&nbsp; March 2026
+  EPL Predictor v1.2.0 &nbsp;·&nbsp; <span id="footer-accuracy" title="Accuracy on the holdout test set. The model never saw these matches during training.">Model accuracy …%</span> &nbsp;·&nbsp; Built with <a href="https://claude.ai/claude-code" target="_blank" rel="noopener">Claude Code</a> &nbsp;·&nbsp; March 2026
 </footer>
 <script>
 let teamsData=[];
@@ -587,6 +587,28 @@ async function loadOverview(){
   document.getElementById('about-pre-acc').textContent = d.pre_accuracy+'%';
   document.getElementById('about-ht-acc').textContent = d.ing_accuracy+'%';
   document.getElementById('hero-ht-acc-banner').textContent = d.ing_accuracy;
+}
+
+async function loadMethodologyStats(){
+  try{
+    const d=await fetch('/api/performance').then(r=>r.json());
+    const acc=(d.accuracy*100).toFixed(1);
+    const wf=(d.walk_forward_accuracy*100).toFixed(1);
+    const above=(d.accuracy*100-33.3).toFixed(1);
+    // Methodology tab
+    document.getElementById('meth-holdout-acc').textContent=acc+'%';
+    document.getElementById('meth-holdout-n').textContent=d.total+' matches';
+    document.getElementById('meth-wf-acc').textContent=wf+'%';
+    document.getElementById('meth-above-random').textContent='+'+above+'pp';
+    document.getElementById('meth-acc-inline').textContent=acc;
+    document.getElementById('meth-acc-honest').textContent=acc;
+    // Footer
+    const seasons=d.seasons||11;
+    const range=d.training_seasons||'2014-2025';
+    document.getElementById('footer-accuracy').textContent='Model accuracy '+acc+'%';
+    document.getElementById('footer-accuracy').title=
+      `Accuracy on a 20% chronological holdout test set (${d.total} matches) from ${seasons} EPL seasons (${range}). The model never saw these matches during training.`;
+  }catch(e){console.warn('Failed to load methodology stats',e)}
 }
 
 async function loadTeams(){
@@ -887,6 +909,7 @@ function crestImg(team, size=32){
 
 populateTeamDropdowns();
 loadOverview();
+loadMethodologyStats();
 // Restore last active tab from localStorage (default: fixtures)
 const savedTab = localStorage.getItem('activeTab');
 if(savedTab && document.getElementById(savedTab)){
@@ -951,15 +974,15 @@ function renderStandings(){
     return `<tr class="${zoneClass}">
       <td style="color:var(--muted);font-weight:600">${pos}</td>
       <td><div class="team-name-cell">${crest}<span>${row.team}</span></div></td>
-      <td class="pts">${row.points}</td>
+      <td><span class="form-dots">${form}</span></td>
       <td>${row.played}</td>
+      <td class="pts">${row.points}</td>
       <td style="color:var(--green);font-weight:600">${row.won}</td>
       <td style="color:var(--muted)">${row.drawn}</td>
       <td style="color:var(--red,#ff1744)">${row.lost}</td>
       <td>${row.gf}</td>
       <td>${row.ga}</td>
       <td style="font-weight:600">${gd}</td>
-      <td><span class="form-dots">${form}</span></td>
     </tr>`;
   }).join('');
 }
