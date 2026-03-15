@@ -83,15 +83,27 @@ Biggest single accuracy jump in project history (+1.32pp).
 - All 20 current EPL teams confirmed including Leeds, Sunderland, Ipswich
 - 9 new FIFA features in `hist_features.csv`: home/away att, def, mid, overall + `fifa_overall_diff`
 - `hist_features.csv` now 71 columns, 4,166 rows, zero NaN
-- Retrain running in Colab with FIFA features — results pending
+- Retrain completed in Colab — **57.31% holdout, did NOT beat 59.11% champion**
+
+### FIFA Retrain Results (FAILED — do not deploy)
+
+| Metric | Champion (59.11%) | FIFA retrain |
+|---|---|---|
+| Holdout accuracy | 59.11% | 57.31% (−1.80pp) |
+| Features | 26 | 31 |
+| Draw recall | 3.66% | 0.0% (regression) |
+| Walk-forward | 55.70% | 56.23% |
+| RPS | 0.1895 | 0.1905 |
+| max_depth | 7 | 3 |
+
+**Key insight:** Walk-forward CV Optuna found shallow trees (max_depth=3) — different feature sets need different hyperparameters. The champion's 300-trial direct holdout Optuna found max_depth=7 which works better. FIFA features survived RFE (6 of 9) but the overall model was worse. Squad quality is already captured by odds + ELO + Pi-ratings.
+
+**Plan:** Try again in a combined retrain with FIFA + Transfermarkt + referee features, using 300-trial direct holdout Optuna (not walk-forward CV).
 
 ### Next Session Priorities
 
-1. Review FIFA retrain results — did 9 new features improve accuracy?
-2. Transfermarkt market values — next feature pipeline after FIFA confirmed
-3. GitHub Action — weekly auto-retrain
-4. A4 value betting — `ODDS_API_KEY` available
-5. Custom draw threshold — 5 lines of code
-6. Referee data pipeline — football-data.co.uk
-7. Teams table column order fix on mobile
-8. Tab refresh fixes on web
+1. Transfermarkt squad market values — scrape free data, add to feature set
+2. Referee features — already in football-data.co.uk CSV, zero effort
+3. Combined retrain: FIFA + Transfermarkt + referee + 300-trial direct Optuna
+4. GitHub Action — weekly auto-retrain
+5. A4 value betting — `ODDS_API_KEY` available

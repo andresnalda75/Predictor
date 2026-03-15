@@ -55,7 +55,7 @@ Flask web app deployed on Railway that predicts EPL match outcomes using XGBoost
 |---|---|---|---|---|
 | 1 | **Bookmaker odds as features** — football-data.co.uk CSV has B365H/B365D/B365A columns. Add implied probability features from odds. | football-data.co.uk (free CSV) | +2-3% accuracy | ✅ DONE — 57.07% → 57.79% (+0.72pp). 11 new features from B365 odds (implied probs, home edge, favourite, overround). **Known limitation:** trained on real B365 historical odds, but live predictions use ELO-derived implied probabilities as a proxy (`get_implied_odds()` in app.py). Live accuracy may be slightly below 57.79%. To fix: implement The Odds API (A4 — value betting) for real pre-match odds. |
 | 2 | **xG from Understat** — free historical xG for EPL teams. Better than shots on target for measuring chance quality. | understat.com (free, scrape) | +1-2% accuracy | ✅ DONE — 5 xG features added, all survived RFE. Part of 59.11% champion. |
-| 3 | **FIFA/EA FC player ratings** — aggregate by role (GK/DEF/MID/FWD) per team. 9 features: home/away att, def, mid, overall + fifa_overall_diff. FC 25 real ratings from Kaggle (nyagami dataset). | Kaggle (free) | +1-2% accuracy | ✅ IN PROGRESS — pipeline built (`scripts/fetch_fifa_ratings.py`), hist_features.csv updated (71 cols, 4166 rows, zero NaN), retrain running in Colab |
+| 3 | **FIFA/EA FC player ratings** — aggregate by role (GK/DEF/MID/FWD) per team. 9 features: home/away att, def, mid, overall + fifa_overall_diff. FC 25 real ratings from Kaggle (nyagami dataset). | Kaggle (free) | +1-2% accuracy | ❌ FAILED — 57.31% holdout (vs 59.11% champion). 6 of 9 FIFA features survived RFE (home_fifa_att, home_fifa_overall, away_fifa_def, away_fifa_mid, away_fifa_overall, fifa_overall_diff) but didn't improve accuracy. Draw recall regressed to 0.0%. WF 56.23%. Pipeline built (`scripts/fetch_fifa_ratings.py`) but features not deployed. |
 | 4 | **Transfermarkt squad market values** — strong proxy for team quality and depth. Proven predictive in academic literature. | transfermarkt.com (free, scrape) | +1-2% accuracy | Next after FIFA results confirmed |
 | 5 | **Team formation data** — 4-3-3 vs 5-4-1 etc affects defensive/offensive patterns. Available for current season. | football-data.org API | +0.5-1% accuracy | Not started |
 | 6 | **Ensemble voting** — combine XGBoost + CatBoost + LightGBM predictions via meta-learner (stacking). | Internal | +1-2% accuracy | Deprioritised — CatBoost underperformed (52-53% WF), LightGBM cancelled |
@@ -123,6 +123,7 @@ Current draw recall is 0% — the model never predicts draws. This is the single
 | CatBoost balanced class weights | Walk-forward peaked at 52–53% | Well below XGBoost 55% — ruled out without new features |
 | days_rest / momentum features | Dropped by RFE (2026-03-15) | Not predictive enough — xG and odds features dominate |
 | 100 Optuna trials | Missed best params | Best found at trial 247 of 300 — always run 300+ trials |
+| FIFA ratings alone (31 features) | 57.31% holdout, −1.80pp vs 59.11% champion | 6 of 9 FIFA features survived RFE (home_fifa_att, home_fifa_overall, away_fifa_def, away_fifa_mid, away_fifa_overall, fifa_overall_diff) but Optuna found shallow trees (max_depth=3) vs champion's deep trees (max_depth=7). Different feature set requires different hyperparameters — walk-forward CV Optuna finds conservative params. Need direct holdout Optuna. Try again in combined retrain with Transfermarkt + referee features. |
 
 ### TESTING PROTOCOL — REQUIRED BEFORE DEPLOYING ANY NEW MODEL
 
@@ -220,15 +221,11 @@ These features are computed at prediction time but NOT yet in the trained model'
 
 ## Next Session Priorities
 
-1. Push new champion (59.11%) to Railway (pending)
-2. **A3:** GitHub Action — weekly auto-retrain for compound gain
-3. **A4:** Value betting — `ODDS_API_KEY` available, The Odds API already integrated
-4. **A3:** FIFA player ratings — scrape fifaindex.com, aggregate by role (GK/DEF/MID/FWD)
-5. **A3:** Transfermarkt market values — scrape squad values
-6. **A3:** Custom draw threshold — 5 lines of code, test post-retrain
-7. **A3:** Referee data pipeline — football-data.co.uk CSV
-8. **A1:** Teams table column order fix on mobile
-9. **A1:** Tab refresh fixes on web
+1. **A3:** Transfermarkt squad market values — scrape free data, add to feature set
+2. **A3:** Referee features — already in football-data.co.uk CSV, zero effort to extract
+3. **A3:** Combined retrain: FIFA + Transfermarkt + referee + 300-trial direct holdout Optuna (not walk-forward CV)
+4. **A3:** GitHub Action — weekly auto-retrain for compound gain
+5. **A4:** Value betting — `ODDS_API_KEY` available, The Odds API already integrated
 
 ---
 
