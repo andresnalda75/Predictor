@@ -911,11 +911,6 @@ function crestImg(team, size=32){
 populateTeamDropdowns();
 loadOverview();
 loadMethodologyStats();
-// Restore last active tab from localStorage (default: fixtures)
-const savedTab = localStorage.getItem('activeTab');
-if(savedTab && document.getElementById(savedTab)){
-  showTab(savedTab);
-}
 </script>
 
 <script>
@@ -1019,7 +1014,6 @@ async function loadFixtures(){
   container.classList.add('fixtures-fade-in');
   renderFixtures('all');
 }
-loadFixtures();
 
 function filterFixtures(mode, btn){
   document.querySelectorAll('.fixtures-filter .seg-btn').forEach(b=>b.classList.remove('active'));
@@ -1077,6 +1071,16 @@ function renderFixtures(mode){
     html += '</div>';
   });
   container.innerHTML = html || '<div class="loading">No upcoming fixtures found.</div>';
+}
+
+// ── Startup: restore tab & trigger lazy loads ──
+// This must be at the end of the last script block so all functions are defined.
+const savedTab = localStorage.getItem('activeTab');
+if(savedTab && document.getElementById(savedTab)){
+  showTab(savedTab);
+} else {
+  // Default tab is fixtures (marked active in HTML), ensure it loads
+  loadFixtures();
 }
 </script>
 <script>
