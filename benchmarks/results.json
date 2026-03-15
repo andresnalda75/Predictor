@@ -284,6 +284,55 @@
         "reg_alpha": 7.502516870359578e-07,
         "reg_lambda": 0.24108414076296578
       }
+    },
+    {
+      "date": "2026-03-15",
+      "model": "XGBoost + Optuna + Pi-ratings + RFE",
+      "accuracy": 0.5911,
+      "rps": 0.1895,
+      "draw_recall": 0.0366,
+      "n_features": 26,
+      "features": [
+        "home_form_pts",
+        "home_form_wins",
+        "home_form_draws",
+        "away_form_gd",
+        "home_home_pts",
+        "away_away_gd",
+        "pts_diff",
+        "gd_diff",
+        "elo_home",
+        "elo_away",
+        "elo_diff",
+        "pi_diff",
+        "home_shots_against_avg",
+        "home_sot_against_avg",
+        "away_shots_avg",
+        "corners_diff",
+        "home_xg_avg",
+        "away_xg_avg",
+        "home_xga_avg",
+        "away_xga_avg",
+        "xg_diff",
+        "b365_implied_home",
+        "b365_implied_draw",
+        "b365_implied_away",
+        "b365_home_edge",
+        "b365_favourite"
+      ],
+      "walk_forward_accuracy": 0.557,
+      "walk_forward_rps": 0.1946,
+      "best_params": {
+        "n_estimators": 443,
+        "learning_rate": 0.1960128640708209,
+        "max_depth": 7,
+        "subsample": 0.7661914910681101,
+        "colsample_bytree": 0.9204148603450834,
+        "min_child_weight": 10,
+        "gamma": 3.0755692786564595,
+        "reg_alpha": 4.887546702155192,
+        "reg_lambda": 2.675898268077906
+      }
     }
   ]
 }

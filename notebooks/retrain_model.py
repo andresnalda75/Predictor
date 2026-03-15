@@ -824,7 +824,17 @@ def main():
     # ── 5. Optuna hyperparameter search ───────────────────────────────────────
     print("\n5. Running Optuna hyperparameter search...")
     # Use training data only for Optuna (walk-forward within train set)
-    best_params, study = optuna_search(train_df, selected_cols, le, n_trials=100)
+    best_params = {
+        'n_estimators': 443,
+        'learning_rate': 0.1960128640708209,
+        'max_depth': 7,
+        'subsample': 0.7661914910681101,
+        'colsample_bytree': 0.9204148603450834,
+        'min_child_weight': 10,
+        'gamma': 3.0755692786564595,
+        'reg_alpha': 4.887546702155192,
+        'reg_lambda': 2.675898268077906,
+    }
 
     # ── 6. Train final model ──────────────────────────────────────────────────
     print("\n" + "=" * 60)

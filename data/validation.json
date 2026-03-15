@@ -1,60 +1,76 @@
 {
-  "accuracy": 0.5779,
-  "correct": 482,
+  "accuracy": 0.5911,
+  "correct": 493,
   "total": 834,
-  "p_value": 2.1228017095584063e-47,
-  "beats_random_by": 73.4,
-  "rps": 0.1894,
-  "draw_recall": 0.0,
+  "p_value": 2.3639177430971707e-52,
+  "beats_random_by": 77.3,
+  "rps": 0.1895,
+  "draw_recall": 0.0366,
   "confidence_bands": {
-    "below_40": {"accuracy": 0.441, "correct": 45, "total": 102},
-    "band_40_50": {"accuracy": 0.4816, "correct": 118, "total": 245},
-    "band_50_60": {"accuracy": 0.561, "correct": 92, "total": 164},
-    "above_60": {"accuracy": 0.7023, "correct": 227, "total": 323}
+    "below_40": {
+      "accuracy": 0.5057,
+      "correct": 44,
+      "total": 87
+    },
+    "band_40_50": {
+      "accuracy": 0.5149,
+      "correct": 104,
+      "total": 202
+    },
+    "band_50_60": {
+      "accuracy": 0.5079,
+      "correct": 97,
+      "total": 191
+    },
+    "above_60": {
+      "accuracy": 0.7006,
+      "correct": 248,
+      "total": 354
+    }
   },
-  "high_conf_acc": 0.6612,
-  "high_conf_n": 487,
-  "low_conf_acc": 0.4611,
-  "low_conf_n": 347,
-  "big_game_acc": 0.625,
+  "high_conf_acc": 0.633,
+  "high_conf_n": 545,
+  "low_conf_acc": 0.5121,
+  "low_conf_n": 289,
+  "big_game_acc": 0.6283,
   "big_game_n": 304,
-  "close_game_acc": 0.5259,
+  "close_game_acc": 0.5519,
   "close_game_n": 270,
   "per_outcome": {
     "A": {
-      "precision": 0.5635,
-      "recall": 0.6384,
-      "f1-score": 0.5986,
+      "precision": 0.5701,
+      "recall": 0.6753,
+      "f1-score": 0.6182,
       "support": 271.0
     },
     "D": {
-      "precision": 0.0,
-      "recall": 0.0,
-      "f1-score": 0.0,
+      "precision": 0.5385,
+      "recall": 0.0366,
+      "f1-score": 0.0686,
       "support": 191.0
     },
     "H": {
-      "precision": 0.5908,
-      "recall": 0.8306,
-      "f1-score": 0.6905,
+      "precision": 0.606,
+      "recall": 0.8145,
+      "f1-score": 0.695,
       "support": 372.0
     }
   },
   "seasons": 11,
   "training_seasons": "2014-2025",
-  "model_version": "11 seasons (2014-2025), XGBoost + Optuna + Pi-ratings, retrained 2026-03-14",
-  "walk_forward_accuracy": 0.5638,
-  "walk_forward_rps": 0.1944,
-  "walk_forward_draw_recall": 0.0311,
+  "model_version": "11 seasons (2014-2025), XGBoost + Optuna + Pi-ratings, retrained 2026-03-15",
+  "walk_forward_accuracy": 0.557,
+  "walk_forward_rps": 0.1946,
+  "walk_forward_draw_recall": 0.0539,
   "best_params": {
-    "n_estimators": 394,
-    "learning_rate": 0.015964473111044278,
-    "max_depth": 6,
-    "subsample": 0.667957005509214,
-    "colsample_bytree": 0.5005232693003366,
-    "min_child_weight": 4,
-    "gamma": 4.816845128435333,
-    "reg_alpha": 7.502516870359578e-07,
-    "reg_lambda": 0.24108414076296578
+    "n_estimators": 443,
+    "learning_rate": 0.1960128640708209,
+    "max_depth": 7,
+    "subsample": 0.7661914910681101,
+    "colsample_bytree": 0.9204148603450834,
+    "min_child_weight": 10,
+    "gamma": 3.0755692786564595,
+    "reg_alpha": 4.887546702155192,
+    "reg_lambda": 2.675898268077906
   }
 }
