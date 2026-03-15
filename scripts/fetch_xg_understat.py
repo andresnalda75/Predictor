@@ -2,20 +2,22 @@
 """
 Fetch historical xG data from understat.com and merge into hist_matches.csv.
 
-Uses the `understat` Python package (pip install understat) to scrape per-match
-expected goals (home_xg, away_xg) for EPL seasons 2017-2025.
+Uses direct HTTP requests to understat's JSON API — no async, no aiohttp,
+no understat package. Only requires `requests` and `pandas`.
+
+API endpoint: https://understat.com/getLeagueData/EPL/{year}
+Returns JSON with a "dates" array of per-match xG data.
 
 Usage:
     python scripts/fetch_xg_understat.py
 """
 
-import asyncio
+import json
 import os
-import sys
-from datetime import datetime
+import time
 
 import pandas as pd
-from understat import Understat
+import requests
 
 # ---------------------------------------------------------------------------
 # Paths
@@ -32,36 +34,7 @@ UNDERSTAT_TO_HIST = {
     "Nottingham Forest": "Nott'm Forest",
     "Wolverhampton Wanderers": "Wolves",
     "West Bromwich Albion": "West Brom",
-    "Sheffield United": "Sheffield United",
-    "Tottenham": "Tottenham",
     "Newcastle United": "Newcastle",
-    "Brighton": "Brighton",
-    "Leicester": "Leicester",
-    "Leeds": "Leeds",
-    "West Ham": "West Ham",
-    "Crystal Palace": "Crystal Palace",
-    "Aston Villa": "Aston Villa",
-    "Southampton": "Southampton",
-    "Burnley": "Burnley",
-    "Everton": "Everton",
-    "Fulham": "Fulham",
-    "Liverpool": "Liverpool",
-    "Arsenal": "Arsenal",
-    "Chelsea": "Chelsea",
-    "Bournemouth": "Bournemouth",
-    "Brentford": "Brentford",
-    "Watford": "Watford",
-    "Norwich": "Norwich",
-    "Huddersfield": "Huddersfield",
-    "Cardiff": "Cardiff",
-    "Swansea": "Swansea",
-    "Stoke": "Stoke",
-    "Luton": "Luton",
-    "Ipswich": "Ipswich",
-    "Middlesbrough": "Middlesbrough",
-    "Hull": "Hull",
-    "QPR": "QPR",
-    "Sunderland": "Sunderland",
 }
 
 
@@ -70,35 +43,47 @@ def map_team(name):
     return UNDERSTAT_TO_HIST.get(name, name)
 
 
-async def fetch_all_seasons():
+def fetch_season(year):
+    """Fetch all match results with xG for a single EPL season.
+
+    Args:
+        year: Starting year of the season (e.g. 2017 for 2017-18).
+
+    Returns:
+        List of dicts with date, home_team, away_team, home_xg, away_xg.
+    """
+    url = f"https://understat.com/getLeagueData/EPL/{year}"
+    resp = requests.get(url, headers={"X-Requested-With": "XMLHttpRequest"})
+    resp.raise_for_status()
+
+    data = resp.json()
+    dates = data["dates"]
+    results = [m for m in dates if m["isResult"]]
+
+    matches = []
+    for m in results:
+        matches.append({
+            "date": m["datetime"][:10],
+            "home_team": map_team(m["h"]["title"]),
+            "away_team": map_team(m["a"]["title"]),
+            "home_xg": round(float(m["xG"]["h"]), 2),
+            "away_xg": round(float(m["xG"]["a"]), 2),
+        })
+
+    return matches
+
+
+def fetch_all_seasons():
     """Fetch xG data for EPL seasons 2017-18 through 2024-25."""
-    # Understat uses the starting year: 2017 = 2017-18 season
     seasons = [2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024]
 
     all_matches = []
-    import aiohttp
-    async with aiohttp.ClientSession() as session:
-        understat = Understat(session)
-        for year in seasons:
-            print(f"  Fetching {year}/{year + 1}...")
-            results = await understat.get_league_results("epl", year)
-
-            for match in results:
-                date_str = match["datetime"][:10]  # "YYYY-MM-DD"
-                home_team = map_team(match["h"]["title"])
-                away_team = map_team(match["a"]["title"])
-                home_xg = float(match["xG"]["h"])
-                away_xg = float(match["xG"]["a"])
-
-                all_matches.append({
-                    "date": date_str,
-                    "home_team": home_team,
-                    "away_team": away_team,
-                    "home_xg": round(home_xg, 2),
-                    "away_xg": round(away_xg, 2),
-                })
-
-            print(f"    → {len(results)} matches fetched")
+    for year in seasons:
+        print(f"  Fetching {year}/{year + 1}...")
+        matches = fetch_season(year)
+        all_matches.extend(matches)
+        print(f"    → {len(matches)} matches")
+        time.sleep(1)  # polite rate limiting
 
     xg_df = pd.DataFrame(all_matches)
     print(f"\n  Total xG records: {len(xg_df)}")
@@ -158,7 +143,7 @@ def main():
 
     # 1. Fetch xG from understat
     print("\n1. Fetching xG data from understat.com...")
-    xg_df = asyncio.run(fetch_all_seasons())
+    xg_df = fetch_all_seasons()
 
     # 2. Merge into hist_matches.csv
     print("\n2. Merging xG into hist_matches.csv...")
