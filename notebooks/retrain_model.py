@@ -318,14 +318,21 @@ def predict_proba_ordered(model, le, X):
 # RFE feature selection
 # ─────────────────────────────────────────────────────────────────────────────
 
-def rfe_select(X_train, y_train, X_val, y_val, le, all_cols, min_features=10):
+def rfe_select(X_train, y_train, X_val, y_val, le, all_cols, min_features=10,
+               protected_cols=None):
     """
     Recursive Feature Elimination: drop the least important feature each round,
     keep the subset that maximises validation accuracy.
+
+    protected_cols: list of feature names that RFE must never drop.
     """
     print("\n" + "=" * 60)
     print("RFE FEATURE SELECTION")
     print("=" * 60)
+
+    protected = set(protected_cols or [])
+    if protected:
+        print(f"  Protected (force-included): {sorted(protected)}")
 
     current_cols = list(all_cols)
     best_acc = 0
@@ -364,9 +371,14 @@ def rfe_select(X_train, y_train, X_val, y_val, le, all_cols, min_features=10):
         if len(current_cols) <= min_features:
             break
 
-        # Drop least important feature
+        # Drop least important feature, skipping protected ones
         importances = model.feature_importances_
-        worst_idx = np.argmin(importances)
+        # Build list of (importance, index) for droppable features only
+        droppable = [(importances[i], i) for i in range(len(current_cols))
+                     if current_cols[i] not in protected]
+        if not droppable:
+            break
+        _, worst_idx = min(droppable)
         dropped = current_cols.pop(worst_idx)
         print(f"    dropped: {dropped} (importance={importances[worst_idx]:.4f})")
 
@@ -709,9 +721,21 @@ def main():
 
     # ── 4. RFE feature selection ──────────────────────────────────────────────
     print("\n4. Running RFE feature selection...")
+    # Force-include xG and odds features — never let RFE drop them
+    PROTECTED_FEATURES = [
+        # xG features (5)
+        "home_xg_avg", "away_xg_avg", "home_xga_avg", "away_xga_avg", "xg_diff",
+        # Odds features (5)
+        "b365_implied_home", "b365_implied_draw", "b365_implied_away",
+        "b365_home_edge", "b365_favourite",
+    ]
+    # Only protect features that actually exist in the data
+    protected = [c for c in PROTECTED_FEATURES if c in all_feature_cols]
+    print(f"   Force-included features: {len(protected)}/{len(PROTECTED_FEATURES)}")
+
     selected_cols, rfe_history = rfe_select(
         train_df, train_df["result"], test_df, test_df["result"],
-        le, all_feature_cols, min_features=10
+        le, all_feature_cols, min_features=10, protected_cols=protected
     )
 
     # ── 5. Optuna hyperparameter search ───────────────────────────────────────
