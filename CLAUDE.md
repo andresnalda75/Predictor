@@ -268,3 +268,37 @@ These features are computed at prediction time but NOT yet in the trained model'
 
 - ✅ Footer already shows '57.8%' (fixed in prior commit)
 - ✅ Added tooltip on hover explaining: "Accuracy on a 20% chronological holdout test set (834 matches) from 8 EPL seasons (2017–2025)"
+
+---
+
+## COMMUNITY & MARKETING RULES
+
+### Reddit Posting Rules — lessons learned 15 March 2026
+
+**Subreddit status:**
+- ❌ **r/sportsanalytics** — BANNED, removed by mods. Wrong sub for project/self-promotion posts.
+- ⏳ **r/PremierLeague** — requires mod approval, too slow. Not worth the wait.
+- ✅ **r/datascience** — ML projects welcome, large audience
+- ✅ **r/learnmachinelearning** — supportive community, loves validation methodology
+- ✅ **r/footballanalytics** — niche but perfect audience (check rules first)
+- ✅ **r/soccer** — huge audience, keep post casual not technical
+- ✅ **r/sportsbook** — betting/analytics crowd, good fit for value betting feature
+
+**ALWAYS read subreddit rules before posting** — check if self-promotion is allowed.
+
+### Post Checklist (before submitting)
+
+1. Read pinned posts and sidebar rules
+2. Check if self-promotion / project posts are allowed
+3. Check minimum karma requirements
+4. Have screenshots ready — visual posts get more traction
+5. Reply in your own voice — AI-sounding replies hurt credibility
+6. Don't post same content to multiple subs on the same day
+
+### WHAT WORKED
+
+- Honest title with real numbers — "57.8% accuracy on 834 matches"
+- Admitting limitations upfront — 0% draw recall
+- Responding quickly to technical criticism
+- Short human replies beat long AI-drafted ones
+- 2.4k views and 22 comments before removal — content resonates
