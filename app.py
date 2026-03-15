@@ -61,6 +61,11 @@ from live_data import fetch_current_season, fetch_standings, fetch_upcoming, CRE
 from injury_data import load_injuries, get_injury_count
 from scripts.fetch_live_odds import fetch_odds, get_match_odds
 
+# Predictions cache — pre-calculated fixture predictions, refreshed with standings/fixtures
+_predictions_cache = None
+_predictions_ts    = 0.0
+_predictions_lock  = threading.Lock()
+
 # Load live season data
 try:
     live_season = fetch_current_season()
@@ -604,14 +609,10 @@ def api_validation():
         return jsonify(json.load(f))
 
 
-@app.route("/api/predict_fixtures")
-def api_predict_fixtures():
+def _build_predictions():
+    """Build predictions for all upcoming fixtures. Called by cache refresh."""
     _refresh_standings()
-    try:
-        fixtures = _get_cached_fixtures()
-    except Exception as e:
-        return jsonify({"error": str(e)})
-
+    fixtures = _get_cached_fixtures()
     results = []
     for fix in fixtures:
         home = fix["home_team"]
@@ -703,8 +704,39 @@ def api_predict_fixtures():
                 "prediction": "N/A",
                 "error": str(e)
             })
+    return results
 
-    return jsonify(results)
+
+def _get_cached_predictions():
+    """Return cached fixture predictions, rebuilding if stale (every 30 min)."""
+    global _predictions_cache, _predictions_ts
+    if _predictions_cache is not None and time.time() - _predictions_ts < _CACHE_TTL:
+        return _predictions_cache
+    with _predictions_lock:
+        if _predictions_cache is not None and time.time() - _predictions_ts < _CACHE_TTL:
+            return _predictions_cache
+        log.info("[cache] building fixture predictions...")
+        _predictions_cache = _build_predictions()
+        _predictions_ts = time.time()
+        log.info("[cache] predictions ready (%d fixtures)", len(_predictions_cache))
+    return _predictions_cache
+
+
+@app.route("/api/predict_fixtures")
+def api_predict_fixtures():
+    try:
+        return jsonify(_get_cached_predictions())
+    except Exception as e:
+        return jsonify({"error": str(e)})
+
+# Pre-warm predictions cache in background thread at startup
+def _prewarm_predictions():
+    try:
+        _get_cached_predictions()
+    except Exception as e:
+        log.warning("Predictions pre-warm failed: %s", e)
+
+threading.Thread(target=_prewarm_predictions, daemon=True).start()
 
 if __name__ == "__main__":
     app.run(debug=True, port=5001, use_reloader=False)
