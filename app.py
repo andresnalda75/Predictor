@@ -268,6 +268,26 @@ def get_rolling_shots(team, n=5):
     n2=len(tm)
     return sh/n2, sha/n2, sot/n2, sota/n2
 
+def get_rolling_xg(team, n=5):
+    """Rolling n-match average xG for and against. Returns (xg_for, xg_against).
+    Falls back to 0.0 if no xG data available (pre-2017 or live API matches)."""
+    if "home_xg" not in live_df.columns:
+        return 0.0, 0.0
+    tm = live_df[((live_df["home_team"]==team)|(live_df["away_team"]==team))]
+    tm = tm[tm["home_xg"].notna()].tail(n)
+    if len(tm) == 0:
+        return 0.0, 0.0
+    xg_for, xg_against = 0.0, 0.0
+    for _, r in tm.iterrows():
+        if r["home_team"] == team:
+            xg_for += r["home_xg"]
+            xg_against += r["away_xg"]
+        else:
+            xg_for += r["away_xg"]
+            xg_against += r["home_xg"]
+    count = len(tm)
+    return xg_for / count, xg_against / count
+
 def get_pi_rating(team):
     """Return (R_h, R_a, overall) Pi-rating for a team. Defaults to 0.0."""
     r = pi_team_ratings.get(team)
@@ -490,6 +510,10 @@ def api_predict():
     # Bookmaker odds (real from The Odds API, ELO fallback)
     imp_h, imp_d, imp_a, h_edge, fav, _src = get_implied_odds(elo_home, elo_away, home, away)
 
+    # xG rolling averages
+    h_xg, h_xga = get_rolling_xg(home)
+    a_xg, a_xga = get_rolling_xg(away)
+
     feat_dict = {
         "home_form_pts":h_pts,"home_form_gf":h_gf,"home_form_ga":h_ga,
         "home_form_gd":h_gf-h_ga,"home_form_wins":h_wins,"home_form_draws":h_draws,
@@ -516,7 +540,10 @@ def api_predict():
         "away_shots_avg":a_sh,"away_shots_against_avg":a_sha,
         "away_sot_avg":a_sot,"away_sot_against_avg":a_sota,
         "shots_diff":h_sh-a_sh,"sot_diff":h_sot-a_sot,
-        "corners_diff":0
+        "corners_diff":0,
+        "home_xg_avg":h_xg,"away_xg_avg":a_xg,
+        "home_xga_avg":h_xga,"away_xga_avg":a_xga,
+        "xg_diff":h_xg-a_xg,
     }
     feats = pd.DataFrame([feat_dict])[CHAMPION_COLS]
     proba  = xgb_champion.predict_proba(feats)[0]
@@ -649,6 +676,10 @@ def _build_predictions():
             # Bookmaker odds (real from The Odds API, ELO fallback)
             imp_h, imp_d, imp_a, h_edge, fav, odds_source = get_implied_odds(elo_home, elo_away, home, away)
 
+            # xG rolling averages
+            h_xg, h_xga = get_rolling_xg(home)
+            a_xg, a_xga = get_rolling_xg(away)
+
             feat_dict = {
                 "home_form_pts":h_pts,"home_form_gf":h_gf,"home_form_ga":h_ga,
                 "home_form_gd":h_gf-h_ga,"home_form_wins":h_wins,"home_form_draws":h_draws,
@@ -675,7 +706,10 @@ def _build_predictions():
                 "away_shots_avg":a_sh,"away_shots_against_avg":a_sha,
                 "away_sot_avg":a_sot,"away_sot_against_avg":a_sota,
                 "shots_diff":h_sh-a_sh,"sot_diff":h_sot-a_sot,
-                "corners_diff":0
+                "corners_diff":0,
+                "home_xg_avg":h_xg,"away_xg_avg":a_xg,
+                "home_xga_avg":h_xga,"away_xga_avg":a_xga,
+                "xg_diff":h_xg-a_xg,
             }
             feats = pd.DataFrame([feat_dict])[CHAMPION_COLS]
             proba  = xgb_champion.predict_proba(feats)[0]
