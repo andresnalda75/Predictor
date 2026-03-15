@@ -76,14 +76,22 @@ Biggest single accuracy jump in project history (+1.32pp).
 
 476/500 requests remaining this month.
 
+### FIFA/EA FC Player Ratings Pipeline (late session)
+
+- Built `scripts/fetch_fifa_ratings.py` — complete pipeline
+- FC 25 real ratings sourced from Kaggle (nyagami dataset) — replaced FC 24 carry-forward
+- All 20 current EPL teams confirmed including Leeds, Sunderland, Ipswich
+- 9 new FIFA features in `hist_features.csv`: home/away att, def, mid, overall + `fifa_overall_diff`
+- `hist_features.csv` now 71 columns, 4,166 rows, zero NaN
+- Retrain running in Colab with FIFA features — results pending
+
 ### Next Session Priorities
 
-1. Push new champion to Railway (pending)
-2. GitHub Action — weekly auto-retrain
-3. A4 value betting — `ODDS_API_KEY` available
-4. FIFA player ratings from fifaindex.com
-5. Transfermarkt market values
-6. Custom draw threshold — 5 lines of code
-7. Referee data pipeline — football-data.co.uk
-8. Teams table column order fix on mobile
-9. Tab refresh fixes on web
+1. Review FIFA retrain results — did 9 new features improve accuracy?
+2. Transfermarkt market values — next feature pipeline after FIFA confirmed
+3. GitHub Action — weekly auto-retrain
+4. A4 value betting — `ODDS_API_KEY` available
+5. Custom draw threshold — 5 lines of code
+6. Referee data pipeline — football-data.co.uk
+7. Teams table column order fix on mobile
+8. Tab refresh fixes on web
