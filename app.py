@@ -553,9 +553,22 @@ def api_predict():
     pred   = labels[np.argmax(proba)]
     conf   = round(float(proba.max()) * 100, 1)
     log.info("predict: %s vs %s → %s (%.1f%% confidence)", home, away, pred, conf)
+    prob_map = {l: round(float(p) * 100, 1) for l, p in zip(labels, proba)}
+    try:
+        log_prediction(
+            match_date=datetime.utcnow().strftime("%Y-%m-%d"),
+            home_team=home, away_team=away,
+            predicted_outcome=pred,
+            prob_home=prob_map.get("H", 0),
+            prob_draw=prob_map.get("D", 0),
+            prob_away=prob_map.get("A", 0),
+            confidence=conf,
+        )
+    except Exception as e:
+        log.warning("Failed to log prediction: %s", e)
     return jsonify({
         "home":home,"away":away,"prediction":pred,
-        "probabilities":{l:round(float(p)*100,1) for l,p in zip(labels,proba)},
+        "probabilities":prob_map,
         "home_position":h_pos,"away_position":a_pos
     })
 
@@ -810,6 +823,37 @@ def _init_predictions_db():
 
 _init_predictions_db()
 log.info("Predictions DB ready: %s", PREDICTIONS_DB)
+
+
+def log_prediction(match_date, home_team, away_team, predicted_outcome,
+                   prob_home, prob_draw, prob_away, confidence,
+                   model_version="v3.0", model_name="Sharp",
+                   model_deployed="2026-03-15"):
+    """Log a prediction to predictions.db. Skips duplicates (same date+teams)."""
+    conn = sqlite3.connect(PREDICTIONS_DB)
+    existing = conn.execute(
+        "SELECT 1 FROM predictions WHERE match_date=? AND home_team=? AND away_team=?",
+        (match_date, home_team, away_team),
+    ).fetchone()
+    if existing:
+        conn.close()
+        return None
+    conn.execute(
+        """INSERT INTO predictions
+           (match_date, home_team, away_team, predicted_outcome,
+            prob_home, prob_draw, prob_away, confidence,
+            model_version, model_name, model_deployed, created_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+        (match_date, home_team, away_team, predicted_outcome,
+         prob_home, prob_draw, prob_away, confidence,
+         model_version, model_name, model_deployed,
+         datetime.utcnow().isoformat()),
+    )
+    conn.commit()
+    row_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
+    conn.close()
+    log.info("Prediction logged: #%d %s vs %s → %s", row_id, home_team, away_team, predicted_outcome)
+    return row_id
 
 
 @app.route("/api/log_prediction", methods=["POST"])
