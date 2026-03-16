@@ -369,10 +369,7 @@
     <div class="card">
       <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.75rem;margin-bottom:1rem">
         <div id="predict-scoreline" style="font-size:.85rem;color:var(--muted)">Sharp v3.0 · Loading…</div>
-        <div style="display:flex;gap:.5rem;flex-wrap:wrap">
-          <button class="btn-predict-all" id="btn-predict-all" onclick="predictAllGameweek()" style="margin:0">Predict All Gameweek</button>
-          <button onclick="clearPredictions()" style="background:transparent;color:var(--red);border:1px solid var(--red);padding:.35rem .9rem;border-radius:8px;font-family:'DM Sans',sans-serif;font-weight:600;font-size:.72rem;cursor:pointer">Clear</button>
-        </div>
+        <button onclick="clearPredictions()" style="background:transparent;color:var(--red);border:1px solid var(--red);padding:.35rem .9rem;border-radius:8px;font-family:'DM Sans',sans-serif;font-weight:600;font-size:.72rem;cursor:pointer">Clear</button>
       </div>
       <div id="predict-feed"><div class="loading">Loading…</div></div>
     </div>
@@ -727,46 +724,81 @@ function renderScoreline(){
     `<span>${acc} live accuracy</span>`;
 }
 
+function getWeekKey(dateStr){
+  // Return Monday of the week containing dateStr (YYYY-MM-DD)
+  const d = new Date(dateStr + 'T12:00:00');
+  const day = d.getDay();
+  const diff = day === 0 ? -6 : 1 - day; // Monday = start of week
+  const mon = new Date(d);
+  mon.setDate(mon.getDate() + diff);
+  return mon.toISOString().slice(0,10);
+}
+
+function formatWeekRange(mondayStr){
+  const mon = new Date(mondayStr + 'T12:00:00');
+  const sun = new Date(mon);
+  sun.setDate(sun.getDate() + 6);
+  const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const m1 = months[mon.getMonth()], d1 = mon.getDate();
+  const m2 = months[sun.getMonth()], d2 = sun.getDate();
+  if(m1 === m2) return `Week of ${m1} ${d1}–${d2}`;
+  return `Week of ${m1} ${d1} – ${m2} ${d2}`;
+}
+
 function renderPredictFeed(){
   renderScoreline();
   const feed = document.getElementById('predict-feed');
-  // Next gameweek fixtures only
   const fixtures = _predictFixtures || [];
-  let nextMD = null;
-  if(fixtures.length) nextMD = Math.min(...fixtures.map(f=>f.matchday));
-  const nextGW = nextMD !== null ? fixtures.filter(f=>f.matchday===nextMD) : [];
+
+  // Filter to 4 weeks from today
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  const cutoff = new Date(today);
+  cutoff.setDate(cutoff.getDate() + 28);
+  const todayStr = today.toISOString().slice(0,10);
+  const cutoffStr = cutoff.toISOString().slice(0,10);
+  const upcoming = fixtures.filter(f => f.date >= todayStr && f.date <= cutoffStr);
+
+  // Group by week
+  const byWeek = {};
+  upcoming.forEach(f => {
+    const wk = getWeekKey(f.date);
+    if(!byWeek[wk]) byWeek[wk] = [];
+    byWeek[wk].push(f);
+  });
+  const weeks = Object.keys(byWeek).sort();
 
   // Past predictions (not in upcoming fixtures)
   const fixtureKeys = new Set(fixtures.map(f=>`${f.date}|${f.home_team}|${f.away_team}`));
   const past = (_predictPast||[]).filter(p=>!fixtureKeys.has(`${p.match_date}|${p.home_team}|${p.away_team}`));
 
-  if(!nextGW.length && !past.length){
+  if(!weeks.length && !past.length){
     feed.innerHTML = '<div class="loading">No predictions yet. Check back when fixtures are available.</div>';
     return;
   }
 
   let html = '';
 
-  // Upcoming fixtures (next gameweek)
-  if(nextGW.length){
-    html += `<div style="font-size:.76rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:.5rem">Matchday ${nextMD}</div>`;
-    nextGW.forEach(f => {
-      html += renderFeedCard(f);
+  weeks.forEach((wk, wi) => {
+    const weekId = `week-${wi}`;
+    html += `<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.5rem;margin:${wi>0?'1.25rem':'0'} 0 .5rem">
+      <div style="font-size:.76rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)">${formatWeekRange(wk)}</div>
+      <button class="btn-predict-all" id="${weekId}-btn" onclick="predictWeek('${weekId}')" style="margin:0;font-size:.72rem;padding:.3rem .8rem">Predict This Week</button>
+    </div>`;
+    byWeek[wk].forEach(f => {
+      html += renderFeedCard(f, weekId);
     });
-  }
+  });
 
-  // Past predictions
   if(past.length){
     html += `<div style="font-size:.76rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:1.25rem 0 .5rem">Past Predictions</div>`;
-    past.forEach(p => {
-      html += renderPastCard(p);
-    });
+    past.forEach(p => { html += renderPastCard(p); });
   }
 
   feed.innerHTML = html;
 }
 
-function renderFeedCard(f){
+function renderFeedCard(f, weekId){
   const fid = `pf-${f.date}-${f.home_team}-${f.away_team}`.replace(/[^a-zA-Z0-9-]/g,'_');
   const [yr,mo,dy] = f.date.split('-');
   const dateStr = `${dy}/${mo}/${yr.slice(2)}`;
@@ -779,7 +811,8 @@ function renderFeedCard(f){
   } else {
     actionHtml = `<button class="btn-predict" onclick="predictFixture('${fid}','${f.home_team}','${f.away_team}','${f.date}')">Predict</button>`;
   }
-  return `<div class="predict-card" id="${fid}" data-home="${f.home_team}" data-away="${f.away_team}" data-date="${f.date}">
+  const weekAttr = weekId ? ` data-week="${weekId}"` : '';
+  return `<div class="predict-card" id="${fid}" data-home="${f.home_team}" data-away="${f.away_team}" data-date="${f.date}"${weekAttr}>
     <div class="predict-card-teams">
       <div class="predict-card-team">${homeCrest}<span class="predict-card-team-name">${f.home_team}</span></div>
       <div class="predict-card-vs">VS</div>
@@ -867,17 +900,12 @@ function rePredict(fid){
   predictFixture(fid, home, away, date);
 }
 
-async function predictAllGameweek(){
-  if(!_predictFixtures||!_predictFixtures.length) return;
-  const btn = document.getElementById('btn-predict-all');
-  btn.disabled = true;
-  btn.textContent = 'Predicting…';
-  const nextMD = Math.min(..._predictFixtures.map(f=>f.matchday));
-  const cards = document.querySelectorAll('.predict-card');
+async function predictWeek(weekId){
+  const btn = document.getElementById(weekId+'-btn');
+  if(btn){ btn.disabled = true; btn.textContent = 'Predicting…'; }
+  const cards = document.querySelectorAll(`.predict-card[data-week="${weekId}"]`);
   const pending = [];
   cards.forEach(card => {
-    const fx = _predictFixtures.find(f=>f.home_team===card.dataset.home&&f.away_team===card.dataset.away&&f.date===card.dataset.date);
-    if(!fx || fx.matchday !== nextMD) return;
     const fid = card.id;
     const actions = document.getElementById(fid+'-actions');
     if(actions && !actions.querySelector('.predict-card-result')){
@@ -887,8 +915,7 @@ async function predictAllGameweek(){
   for(const p of pending){
     await predictFixture(p.fid, p.home, p.away, p.date);
   }
-  btn.disabled = false;
-  btn.textContent = 'Predict All Gameweek';
+  if(btn){ btn.disabled = false; btn.textContent = 'Predict This Week'; }
 }
 
 let _perfLoaded = false;
