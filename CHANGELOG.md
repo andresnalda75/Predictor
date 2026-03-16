@@ -4,22 +4,32 @@ All model and data changes are recorded here. Each deployed model gets a version
 
 ---
 
-## 2026-03-15 — Predict Tab Redesign Plan (A1+A2)
+## 2026-03-15 — Prediction Logging + Predictions Tab + Model Versioning
 
-- **Planned:** Replace free-form team dropdowns with real upcoming fixture cards from football-data.org
-- **Planned:** Each fixture gets a Predict button that runs the model and auto-logs to `predictions.db`
-- **Planned:** "Predict All Gameweek" button for batch predictions
-- **Planned:** `/api/predict` updated to accept fixture-sourced match data and auto-log
-- **Design doc:** `docs/PREDICT_TAB_REDESIGN.md`
+### Prediction Logging System
+- **New:** `data/predictions.db` — SQLite database storing every prediction with outcome tracking
+- **New:** `POST /api/log_prediction` — log a prediction (match_date, teams, probabilities, confidence, model version)
+- **New:** `GET /api/track_record` — all predictions + summary stats (total, resolved, correct, accuracy %, breakdown by model_version)
+- **New:** `DELETE /api/track_record` — clear all predictions
+- **New:** `scripts/reconcile_predictions.py` — reconcile pending predictions against actual results from football-data.org API
+- **Duplicate check:** unique on `match_date + home_team + away_team + model_version` — same model predicts once per match, new model version can log fresh prediction alongside old ones
 
----
+### Predictions Tab (replaces old Predict + Track Record tabs)
+- Fixture cards pulled from `/api/fixtures` replace free-form team dropdowns
+- 3 card states: **unpredicted** (Predict button) → **predicted/pending** (probabilities + confidence badge) → **predicted/resolved** (result + correct/incorrect indicator)
+- "Predict All Gameweek" button runs all unpredicted fixtures at once
+- Auto-logs every prediction to `predictions.db` on click
+- Design doc: `docs/PREDICT_TAB_REDESIGN.md`
 
-## 2026-03-15 — Prediction Logging System (A4)
+### Daily Reconciliation GitHub Action
+- `.github/workflows/reconcile.yml` — runs at 23:00 UTC daily + manual `workflow_dispatch`
+- Fetches finished EPL matches, fills in `actual_outcome` + `correct` for all unresolved predictions (all model versions scored)
 
-- **New:** `data/predictions.db` — SQLite database for storing every prediction with outcome tracking
-- **New:** `POST /api/log_prediction` — logs a prediction (match_date, teams, probabilities, confidence, model version)
-- **New:** `GET /api/track_record` — returns all predictions + summary (total, correct, accuracy %, breakdown by model_version)
-- **New:** `scripts/reconcile_predictions.py` — reconciles pending predictions against actual results from football-data.org API
+### Model Versioning
+- v1.0 "Kickoff" (55.6%, early March 2026) — base XGBoost + Pi-ratings + ELO
+- v2.0 "Odds On" (57.79%, 2026-03-14) — added B365 bookmaker odds
+- v3.0 "Sharp" (59.11%, 2026-03-15) — added xG, RFE to 26 features, draw recall 3.66%. **Current champion.**
+- Every prediction tagged with model version for per-version accuracy tracking
 
 ---
 

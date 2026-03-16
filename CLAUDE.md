@@ -78,12 +78,13 @@ SQLite-based system that logs every prediction the app makes so we can track liv
 |---|---|---|
 | `/api/log_prediction` | POST | Log a prediction. Required JSON: `match_date`, `home_team`, `away_team`, `predicted_outcome`, `prob_home`, `prob_draw`, `prob_away`, `confidence`. Optional: `model_version`, `model_name`, `model_deployed` (default to current champion). Returns `{id, status}`. |
 | `/api/track_record` | GET | Returns all logged predictions + summary stats: total, resolved, correct, accuracy %, and breakdown by `model_version`. |
+| `/api/track_record` | DELETE | Clears all predictions from the database. Returns `{status, deleted}`. |
 
 **Reconciliation:** `scripts/reconcile_predictions.py`
 - Finds predictions where `actual_outcome IS NULL` and `match_date < today`
 - Fetches finished EPL matches from football-data.org API
 - Matches by (date, home_team, away_team) and fills in `actual_outcome` + `correct` for ALL rows (all model versions scored)
-- **Daily GitHub Action:** `.github/workflows/reconcile.yml` runs at 08:00 UTC daily (+ manual `workflow_dispatch`)
+- **Daily GitHub Action:** `.github/workflows/reconcile.yml` runs at 23:00 UTC daily (+ manual `workflow_dispatch`)
 - Manual fallback: `python scripts/reconcile_predictions.py`
 - Requires `FOOTBALL_DATA_API_KEY` (env var locally, GitHub Actions secret in CI)
 - Includes team name mapping (API names → short names used in predictions)
@@ -212,7 +213,7 @@ Current draw recall is 0% — the model never predicts draws. This is the single
 
 ---
 
-## Agent Status (as of 2026-03-15)
+## Agent Status (as of 2026-03-16)
 
 ### Agent 1 — `frontend-improvements` ✅ DONE
 **All tasks complete:**
@@ -265,7 +266,11 @@ Current draw recall is 0% — the model never predicts draws. This is the single
 - The Odds API integrated — 19–20 matches live, 476/500 requests remaining
 - `/api/performance` endpoint live
 - All hardcoded accuracy stats replaced with dynamic values
-- Prediction logging system: SQLite `predictions.db`, `/api/log_prediction`, `/api/track_record`, `scripts/reconcile_predictions.py`
+- Prediction logging system: SQLite `predictions.db`, `POST /api/log_prediction`, `GET /api/track_record`, `DELETE /api/track_record`, `scripts/reconcile_predictions.py`
+- Predictions tab built: fixture cards with 3 states (unpredicted/predicted-pending/predicted-resolved), Predict All Gameweek, auto-logging
+- Daily reconcile GitHub Action (`.github/workflows/reconcile.yml`, 23:00 UTC)
+- Model versioning documented: v1.0 Kickoff → v2.0 Odds On → v3.0 Sharp
+- Duplicate check: unique on `match_date + home_team + away_team + model_version`
 **Remaining:**
 - Value bet detection logic
 - Weekly accuracy report (rolling 10-match accuracy)
@@ -295,13 +300,11 @@ These features are computed at prediction time but NOT yet in the trained model'
 
 ## Next Session Priorities
 
-1. **A1+A2+A5:** Predictions tab — single tab replacing Predict + Track Record. Fixture cards with 3 states (unpredicted → predicted/pending → predicted/resolved). Daily reconciliation GitHub Action. See `docs/PREDICT_TAB_REDESIGN.md`
-2. **A3:** GitHub Action — weekly auto-retrain, +0.32%/week compound gain
-3. **A4:** Value betting — `ODDS_API_KEY` ready, The Odds API already integrated
-4. **A3:** Dixon-Coles P(draw) hybrid feature — est. +10–15% draw recall
-5. **A3:** Custom draw threshold — 5 lines of code, test post-retrain
-6. **A3:** Try time-weighted training — weight recent seasons more heavily
-7. **A1:** Teams table mobile column fix
+1. **A1+A4:** Test Predictions tab on live app — verify fixture cards load, Predict/Predict All work, reconciliation fills results, fix any remaining glitches
+2. **A3:** Dixon-Coles P(draw) hybrid feature — est. +10–15% draw recall
+3. **A3:** Custom draw threshold — `P(draw) > 0.28` override, 5 lines of code, test post-retrain
+4. **A3+A5:** GitHub Action for weekly auto-retrain — +0.32%/week compound gain
+5. **A4:** Value betting — `ODDS_API_KEY` ready, The Odds API already integrated
 
 ---
 
@@ -311,7 +314,7 @@ These features are computed at prediction time but NOT yet in the trained model'
 2. ~~**Benchmark** — set up prediction logging so we can track live accuracy week by week~~ ✅ (predictions.db + reconciliation)
 3. ~~**Improve model** — retrain with better features, target >56% pre-match~~ ✅ (59.11%)
 4. ~~**Frontend polish** — mobile, form indicators, search~~ ✅
-5. **Predictions tab** — single tab with fixture cards, auto-logging, daily reconciliation
+5. ~~**Predictions tab** — single tab with fixture cards, auto-logging, daily reconciliation~~ ✅ (built 2026-03-15)
 6. **Monetise** — see MARKETING.md
 
 ---
