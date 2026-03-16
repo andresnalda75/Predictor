@@ -599,6 +599,7 @@ function showTab(name,btn){
   if(name==='teams') loadTeams();
   if(name==='fixtures' && !window._fixturesData) loadFixtures();
   if(name==='standings' && !window._standingsLoaded) loadStandings();
+  if(name==='track_record') loadTrackRecord();
 }
 
 function accPill(acc){
@@ -1095,6 +1096,63 @@ function renderFixtures(mode){
     html += '</div>';
   });
   container.innerHTML = html || '<div class="loading">No upcoming fixtures found.</div>';
+}
+
+// ── Track Record ──
+let _trackLoaded = false;
+async function loadTrackRecord(){
+  if(_trackLoaded) return;
+  try {
+    const d = await fetch('/api/track_record').then(r=>r.json());
+    _trackLoaded = true;
+    const s = d.summary;
+    const preds = d.predictions || [];
+
+    // Summary
+    if(s.total_predictions > 0){
+      const accText = s.accuracy !== null ? `${s.accuracy}%` : '—';
+      const resolvedText = s.total_resolved > 0
+        ? `<div class="stat-grid" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:.75rem">
+            <div class="stat-card"><div class="stat-num">${s.total_predictions}</div><div class="stat-label">Total Predictions</div></div>
+            <div class="stat-card"><div class="stat-num">${s.total_resolved}</div><div class="stat-label">Resolved</div></div>
+            <div class="stat-card"><div class="stat-num">${s.total_correct}</div><div class="stat-label">Correct</div></div>
+            <div class="stat-card"><div class="stat-num" style="color:var(--epl)">${accText}</div><div class="stat-label">Live Accuracy</div></div>
+          </div>`
+        : `<div class="stat-grid" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:.75rem">
+            <div class="stat-card"><div class="stat-num">${s.total_predictions}</div><div class="stat-label">Predictions Logged</div></div>
+            <div class="stat-card"><div class="stat-num">0</div><div class="stat-label">Resolved</div></div>
+          </div>
+          <p style="font-size:.82rem;color:var(--muted);margin-top:.75rem;font-style:italic">Results will appear once matches are played.</p>`;
+      document.getElementById('track-summary').innerHTML = resolvedText;
+    } else {
+      document.getElementById('track-summary').innerHTML =
+        '<p style="font-size:.92rem;color:var(--muted);text-align:center;padding:.5rem 0">No predictions logged yet.</p>';
+    }
+
+    // Table
+    if(preds.length > 0){
+      const outcomeLabel = o => o === 'H' ? 'Home' : o === 'A' ? 'Away' : o === 'D' ? 'Draw' : '—';
+      let rows = '';
+      preds.forEach(p => {
+        const [yr,mo,dy] = (p.match_date||'').split('-');
+        const dateStr = yr ? `${dy}/${mo}/${yr.slice(2)}` : '—';
+        const predText = outcomeLabel(p.predicted_outcome);
+        const actText = p.actual_outcome ? outcomeLabel(p.actual_outcome) : 'Pending';
+        const icon = p.actual_outcome === null ? '<span style="color:var(--muted)">—</span>'
+          : p.correct === 1 ? '<span style="color:#16a34a">&#10003;</span>'
+          : '<span style="color:#dc2626">&#10007;</span>';
+        rows += `<tr><td>${dateStr}</td><td>${p.home_team}</td><td>${p.away_team}</td><td>${predText}</td><td>${actText}</td><td>${icon}</td></tr>`;
+      });
+      document.getElementById('track-tbody').innerHTML = rows;
+      document.getElementById('track-table').style.display = '';
+      document.getElementById('track-empty').style.display = 'none';
+    } else {
+      document.getElementById('track-table').style.display = 'none';
+      document.getElementById('track-empty').style.display = '';
+    }
+  } catch(e) {
+    document.getElementById('track-summary').innerHTML = '<p style="color:#dc2626">Failed to load track record.</p>';
+  }
 }
 
 // ── Startup: restore tab & trigger lazy loads ──
