@@ -789,17 +789,11 @@ async function predictFixture(fid, home, away, date){
   const el = document.getElementById(fid+'-actions');
   el.innerHTML = '<span class="predict-spinner"></span>';
   try {
-    const d = await fetch(`/api/predict?home=${encodeURIComponent(home)}&away=${encodeURIComponent(away)}`).then(r=>r.json());
+    const d = await fetch(`/api/predict?home=${encodeURIComponent(home)}&away=${encodeURIComponent(away)}&match_date=${encodeURIComponent(date)}`).then(r=>r.json());
     if(d.error){ el.innerHTML = `<span style="color:var(--red);font-size:.82rem">${d.error}</span>`; return; }
     const p = d.probabilities;
     const pred = {predicted_outcome: d.prediction, prob_home: p.H, prob_draw: p.D, prob_away: p.A, confidence: Math.max(p.H,p.D,p.A)};
     el.innerHTML = renderPredictResult(pred, fid);
-    // Log prediction
-    fetch('/api/log_prediction', {method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({match_date:date, home_team:home, away_team:away,
-        predicted_outcome:d.prediction, prob_home:p.H, prob_draw:p.D, prob_away:p.A,
-        confidence:Math.max(p.H,p.D,p.A)})
-    }).catch(()=>{});
     // Update local cache
     if(_predictFixtures){
       const fx = _predictFixtures.find(f=>f.date===date&&f.home_team===home&&f.away_team===away);

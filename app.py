@@ -857,10 +857,12 @@ def log_prediction(match_date, home_team, away_team, predicted_outcome,
                    model_version="v3.0", model_name="Sharp",
                    model_deployed="2026-03-15"):
     """Log a prediction to predictions.db. Skips duplicates (same date+teams+model)."""
+    home_team = home_team.strip().lower()
+    away_team = away_team.strip().lower()
     conn = sqlite3.connect(PREDICTIONS_DB)
     existing = conn.execute(
-        "SELECT 1 FROM predictions WHERE match_date=? AND home_team=? AND away_team=? AND model_version=?",
-        (match_date, home_team, away_team, model_version),
+        "SELECT 1 FROM predictions WHERE LOWER(TRIM(home_team))=? AND LOWER(TRIM(away_team))=? AND match_date=? AND model_version=?",
+        (home_team, away_team, match_date, model_version),
     ).fetchone()
     if existing:
         conn.close()
@@ -901,33 +903,21 @@ def api_log_prediction():
     if missing:
         return jsonify({"error": f"Missing fields: {', '.join(missing)}"}), 400
 
-    conn = sqlite3.connect(PREDICTIONS_DB)
-    conn.execute(
-        """INSERT INTO predictions
-           (match_date, home_team, away_team, predicted_outcome,
-            prob_home, prob_draw, prob_away, confidence,
-            model_version, model_name, model_deployed, created_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-        (
-            data["match_date"],
-            data["home_team"],
-            data["away_team"],
-            data["predicted_outcome"],
-            float(data["prob_home"]),
-            float(data["prob_draw"]),
-            float(data["prob_away"]),
-            float(data["confidence"]),
-            data.get("model_version", "v3.0"),
-            data.get("model_name", "Sharp"),
-            data.get("model_deployed", "2026-03-15"),
-            datetime.utcnow().isoformat(),
-        ),
+    row_id = log_prediction(
+        match_date=data["match_date"],
+        home_team=data["home_team"],
+        away_team=data["away_team"],
+        predicted_outcome=data["predicted_outcome"],
+        prob_home=float(data["prob_home"]),
+        prob_draw=float(data["prob_draw"]),
+        prob_away=float(data["prob_away"]),
+        confidence=float(data["confidence"]),
+        model_version=data.get("model_version", "v3.0"),
+        model_name=data.get("model_name", "Sharp"),
+        model_deployed=data.get("model_deployed", "2026-03-15"),
     )
-    conn.commit()
-    row_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
-    conn.close()
-    log.info("Prediction logged: #%d %s vs %s → %s",
-             row_id, data["home_team"], data["away_team"], data["predicted_outcome"])
+    if row_id is None:
+        return jsonify({"status": "skipped", "reason": "duplicate"}), 200
     return jsonify({"id": row_id, "status": "logged"}), 201
 
 
