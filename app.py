@@ -5,6 +5,8 @@ import pickle
 import os
 import json
 import logging
+import sqlite3
+from datetime import datetime
 
 logging.basicConfig(
     level=logging.INFO,
@@ -777,6 +779,128 @@ def _prewarm_predictions():
         log.warning("Predictions pre-warm failed: %s", e)
 
 threading.Thread(target=_prewarm_predictions, daemon=True).start()
+
+# ── Prediction logging (SQLite) ──────────────────────────────────────────────
+PREDICTIONS_DB = os.path.join(BASE, "data", "predictions.db")
+
+def _init_predictions_db():
+    """Create predictions table if it doesn't exist."""
+    conn = sqlite3.connect(PREDICTIONS_DB)
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS predictions (
+            id              INTEGER PRIMARY KEY AUTOINCREMENT,
+            match_date      TEXT NOT NULL,
+            home_team       TEXT NOT NULL,
+            away_team       TEXT NOT NULL,
+            predicted_outcome TEXT NOT NULL,
+            prob_home       REAL NOT NULL,
+            prob_draw       REAL NOT NULL,
+            prob_away       REAL NOT NULL,
+            confidence      REAL NOT NULL,
+            actual_outcome  TEXT,
+            correct         INTEGER,
+            model_version   TEXT NOT NULL DEFAULT 'v3.0',
+            model_name      TEXT NOT NULL DEFAULT 'Sharp',
+            model_deployed  TEXT NOT NULL DEFAULT '2026-03-15',
+            created_at      TEXT NOT NULL
+        )
+    """)
+    conn.commit()
+    conn.close()
+
+_init_predictions_db()
+log.info("Predictions DB ready: %s", PREDICTIONS_DB)
+
+
+@app.route("/api/log_prediction", methods=["POST"])
+def api_log_prediction():
+    """Log a prediction to the database.
+
+    Expected JSON body:
+        match_date, home_team, away_team, predicted_outcome,
+        prob_home, prob_draw, prob_away, confidence
+    Optional:
+        model_version (default v3.0), model_name (default Sharp),
+        model_deployed (default 2026-03-15)
+    """
+    data = request.get_json(force=True)
+    required = ["match_date", "home_team", "away_team", "predicted_outcome",
+                 "prob_home", "prob_draw", "prob_away", "confidence"]
+    missing = [f for f in required if f not in data]
+    if missing:
+        return jsonify({"error": f"Missing fields: {', '.join(missing)}"}), 400
+
+    conn = sqlite3.connect(PREDICTIONS_DB)
+    conn.execute(
+        """INSERT INTO predictions
+           (match_date, home_team, away_team, predicted_outcome,
+            prob_home, prob_draw, prob_away, confidence,
+            model_version, model_name, model_deployed, created_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+        (
+            data["match_date"],
+            data["home_team"],
+            data["away_team"],
+            data["predicted_outcome"],
+            float(data["prob_home"]),
+            float(data["prob_draw"]),
+            float(data["prob_away"]),
+            float(data["confidence"]),
+            data.get("model_version", "v3.0"),
+            data.get("model_name", "Sharp"),
+            data.get("model_deployed", "2026-03-15"),
+            datetime.utcnow().isoformat(),
+        ),
+    )
+    conn.commit()
+    row_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
+    conn.close()
+    log.info("Prediction logged: #%d %s vs %s → %s",
+             row_id, data["home_team"], data["away_team"], data["predicted_outcome"])
+    return jsonify({"id": row_id, "status": "logged"}), 201
+
+
+@app.route("/api/track_record")
+def api_track_record():
+    """Return all logged predictions + summary statistics."""
+    conn = sqlite3.connect(PREDICTIONS_DB)
+    conn.row_factory = sqlite3.Row
+    rows = conn.execute(
+        "SELECT * FROM predictions ORDER BY match_date DESC, created_at DESC"
+    ).fetchall()
+    conn.close()
+
+    predictions = [dict(r) for r in rows]
+    resolved = [p for p in predictions if p["actual_outcome"] is not None]
+    total = len(predictions)
+    total_resolved = len(resolved)
+    total_correct = sum(1 for p in resolved if p["correct"] == 1)
+    accuracy = round(total_correct / total_resolved * 100, 2) if total_resolved else None
+
+    # Breakdown by model version
+    version_stats = {}
+    for p in resolved:
+        v = p["model_version"]
+        if v not in version_stats:
+            version_stats[v] = {"total": 0, "correct": 0}
+        version_stats[v]["total"] += 1
+        if p["correct"] == 1:
+            version_stats[v]["correct"] += 1
+    for v in version_stats:
+        s = version_stats[v]
+        s["accuracy"] = round(s["correct"] / s["total"] * 100, 2) if s["total"] else None
+
+    return jsonify({
+        "summary": {
+            "total_predictions": total,
+            "total_resolved": total_resolved,
+            "total_correct": total_correct,
+            "accuracy": accuracy,
+            "by_model_version": version_stats,
+        },
+        "predictions": predictions,
+    })
+
 
 if __name__ == "__main__":
     app.run(debug=True, port=5001, use_reloader=False)
