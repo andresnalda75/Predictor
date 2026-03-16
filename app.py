@@ -482,8 +482,9 @@ def api_h2h():
 
 @app.route("/api/predict")
 def api_predict():
-    home = request.args.get("home")
-    away = request.args.get("away")
+    home = request.args.get("home") or request.args.get("home_team")
+    away = request.args.get("away") or request.args.get("away_team")
+    match_date = request.args.get("match_date", datetime.utcnow().strftime("%Y-%m-%d"))
     if not home or not away: return jsonify({"error":"Select both teams"})
     if home == away: return jsonify({"error":"Teams must be different"})
 
@@ -556,7 +557,7 @@ def api_predict():
     prob_map = {l: round(float(p) * 100, 1) for l, p in zip(labels, proba)}
     try:
         log_prediction(
-            match_date=datetime.utcnow().strftime("%Y-%m-%d"),
+            match_date=match_date,
             home_team=home, away_team=away,
             predicted_outcome=pred,
             prob_home=prob_map.get("H", 0),
@@ -567,7 +568,7 @@ def api_predict():
     except Exception as e:
         log.warning("Failed to log prediction: %s", e)
     return jsonify({
-        "home":home,"away":away,"prediction":pred,
+        "match_date":match_date,"home":home,"away":away,"prediction":pred,
         "probabilities":prob_map,
         "home_position":h_pos,"away_position":a_pos
     })
@@ -829,11 +830,11 @@ def log_prediction(match_date, home_team, away_team, predicted_outcome,
                    prob_home, prob_draw, prob_away, confidence,
                    model_version="v3.0", model_name="Sharp",
                    model_deployed="2026-03-15"):
-    """Log a prediction to predictions.db. Skips duplicates (same date+teams)."""
+    """Log a prediction to predictions.db. Skips duplicates (same date+teams+model)."""
     conn = sqlite3.connect(PREDICTIONS_DB)
     existing = conn.execute(
-        "SELECT 1 FROM predictions WHERE match_date=? AND home_team=? AND away_team=?",
-        (match_date, home_team, away_team),
+        "SELECT 1 FROM predictions WHERE match_date=? AND home_team=? AND away_team=? AND model_version=?",
+        (match_date, home_team, away_team, model_version),
     ).fetchone()
     if existing:
         conn.close()
