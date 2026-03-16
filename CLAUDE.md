@@ -82,9 +82,10 @@ SQLite-based system that logs every prediction the app makes so we can track liv
 **Reconciliation:** `scripts/reconcile_predictions.py`
 - Finds predictions where `actual_outcome IS NULL` and `match_date < today`
 - Fetches finished EPL matches from football-data.org API
-- Matches by (date, home_team, away_team) and fills in `actual_outcome` + `correct`
-- Run manually or via cron: `python scripts/reconcile_predictions.py`
-- Requires `FOOTBALL_DATA_API_KEY` environment variable
+- Matches by (date, home_team, away_team) and fills in `actual_outcome` + `correct` for ALL rows (all model versions scored)
+- **Daily GitHub Action:** `.github/workflows/reconcile.yml` runs at 08:00 UTC daily (+ manual `workflow_dispatch`)
+- Manual fallback: `python scripts/reconcile_predictions.py`
+- Requires `FOOTBALL_DATA_API_KEY` (env var locally, GitHub Actions secret in CI)
 - Includes team name mapping (API names → short names used in predictions)
 
 **Duplicate logic:** unique on `match_date + home_team + away_team + model_version`. Same model version can only predict a match once. When a new model is deployed (e.g. v4.0), it can log a fresh prediction for the same match alongside the existing v3.0 entry.
@@ -222,7 +223,7 @@ Current draw recall is 0% — the model never predicts draws. This is the single
 - Injury indicators
 - Dark mode toggle
 - H2H summary in predictions
-- Nav reordered: Fixtures | Predict | Performance | Teams | Live | H2H | Table | Methodology
+- Nav reordered: Fixtures | Predictions | Performance | Teams | Live | H2H | Table | Methodology (Predictions tab replaces old Predict + Track Record — see `docs/PREDICT_TAB_REDESIGN.md`)
 - Performance tab consolidated from 4 tabs (Stats, Accuracy, Confidence, About)
 - Methodology tab created from About page
 - Tab persistence on refresh via localStorage
@@ -294,7 +295,7 @@ These features are computed at prediction time but NOT yet in the trained model'
 
 ## Next Session Priorities
 
-1. **A1+A2:** Predict Tab Redesign — replace free-form dropdowns with real fixture cards, auto-log predictions. See `docs/PREDICT_TAB_REDESIGN.md`
+1. **A1+A2+A5:** Predictions tab — single tab replacing Predict + Track Record. Fixture cards with 3 states (unpredicted → predicted/pending → predicted/resolved). Daily reconciliation GitHub Action. See `docs/PREDICT_TAB_REDESIGN.md`
 2. **A3:** GitHub Action — weekly auto-retrain, +0.32%/week compound gain
 3. **A4:** Value betting — `ODDS_API_KEY` ready, The Odds API already integrated
 4. **A3:** Dixon-Coles P(draw) hybrid feature — est. +10–15% draw recall
@@ -307,10 +308,11 @@ These features are computed at prediction time but NOT yet in the trained model'
 ## Phase Sequence
 
 1. ~~**Stabilise** — fix data pipeline (ELO, shots for live matches), keep deployed model working~~ ✅
-2. **Benchmark** — set up prediction logging so we can track live accuracy week by week
+2. ~~**Benchmark** — set up prediction logging so we can track live accuracy week by week~~ ✅ (predictions.db + reconciliation)
 3. ~~**Improve model** — retrain with better features, target >56% pre-match~~ ✅ (59.11%)
 4. ~~**Frontend polish** — mobile, form indicators, search~~ ✅
-5. **Monetise** — see MARKETING.md
+5. **Predictions tab** — single tab with fixture cards, auto-logging, daily reconciliation
+6. **Monetise** — see MARKETING.md
 
 ---
 
