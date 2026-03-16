@@ -778,6 +778,32 @@ def _get_cached_predictions():
     return _predictions_cache
 
 
+@app.route("/api/fixtures")
+def api_fixtures():
+    """Return upcoming fixtures with any existing predictions for the current model."""
+    fixtures = _get_cached_fixtures()
+    conn = sqlite3.connect(PREDICTIONS_DB)
+    conn.row_factory = sqlite3.Row
+    existing = conn.execute(
+        "SELECT match_date, home_team, away_team, predicted_outcome, "
+        "prob_home, prob_draw, prob_away, confidence, model_version "
+        "FROM predictions WHERE model_version='v3.0'"
+    ).fetchall()
+    conn.close()
+    pred_map = {}
+    for r in existing:
+        key = f"{r['match_date']}|{r['home_team']}|{r['away_team']}"
+        pred_map[key] = dict(r)
+    result = []
+    for f in fixtures:
+        entry = dict(f)
+        key = f"{f['date']}|{f['home_team']}|{f['away_team']}"
+        if key in pred_map:
+            entry["prediction"] = pred_map[key]
+        result.append(entry)
+    return jsonify(result)
+
+
 @app.route("/api/predict_fixtures")
 def api_predict_fixtures():
     try:

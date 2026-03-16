@@ -120,6 +120,7 @@ def fetch_upcoming():
         away = TEAM_MAP.get(m["awayTeam"]["name"], m["awayTeam"]["name"])
         fixtures.append({
             "date":       m["utcDate"][:10],
+            "utc_time":   m["utcDate"][11:16] if len(m["utcDate"]) > 11 else "",
             "home_team":  home,
             "away_team":  away,
             "matchday":   m["matchday"],

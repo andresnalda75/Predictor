@@ -121,6 +121,37 @@
     font-family:'Archivo Black',sans-serif;font-size:1.1rem;margin:0 auto .4rem;}
   .proba-circle.winner{border-color:var(--epl2);color:var(--epl2);}
   .proba-item-label{font-size:.78rem;opacity:.7;}
+  .predict-card{background:var(--card);border:1px solid var(--border);border-radius:12px;
+    padding:1rem 1.25rem;margin-bottom:.6rem;transition:box-shadow .2s;}
+  .predict-card:hover{box-shadow:0 2px 12px rgba(0,0,0,.07);}
+  .predict-card-teams{display:flex;align-items:center;justify-content:space-between;gap:.75rem;margin-bottom:.6rem;}
+  .predict-card-team{display:flex;align-items:center;gap:.5rem;flex:1;min-width:0;}
+  .predict-card-team.away{justify-content:flex-end;text-align:right;}
+  .predict-card-team-name{font-weight:600;font-size:.88rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .predict-card-vs{font-family:'Archivo Black',sans-serif;font-size:.8rem;color:var(--muted);flex-shrink:0;}
+  .predict-card-meta{font-size:.76rem;color:var(--muted);margin-bottom:.75rem;}
+  .predict-card-actions{display:flex;align-items:center;gap:.5rem;}
+  .btn-predict{background:var(--epl);color:#fff;border:none;padding:.45rem 1.1rem;border-radius:8px;
+    font-family:'DM Sans',sans-serif;font-weight:600;font-size:.82rem;cursor:pointer;transition:opacity .2s;}
+  .btn-predict:hover{opacity:.85;}
+  .btn-predict:disabled{opacity:.5;cursor:not-allowed;}
+  .btn-predict-secondary{background:transparent;color:var(--epl);border:1px solid var(--epl);padding:.3rem .75rem;
+    border-radius:6px;font-family:'DM Sans',sans-serif;font-weight:600;font-size:.72rem;cursor:pointer;transition:opacity .2s;}
+  .btn-predict-secondary:hover{opacity:.7;}
+  .btn-predict-all{background:var(--epl);color:#fff;border:none;padding:.6rem 1.5rem;border-radius:10px;
+    font-family:'DM Sans',sans-serif;font-weight:700;font-size:.9rem;cursor:pointer;transition:opacity .2s;margin-bottom:1rem;}
+  .btn-predict-all:hover{opacity:.85;}
+  .btn-predict-all:disabled{opacity:.5;cursor:not-allowed;}
+  .predict-card-result{display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;}
+  .predict-card-probs{font-size:.82rem;color:#374151;font-weight:500;}
+  .predict-card-probs span{margin:0 .15rem;}
+  .predict-card-conf{font-size:.72rem;font-weight:700;padding:.2rem .55rem;border-radius:6px;color:#fff;white-space:nowrap;}
+  .predict-card-conf.high{background:var(--green);}
+  .predict-card-conf.mid{background:var(--amber);color:var(--ink);}
+  .predict-card-conf.low{background:var(--red);}
+  .predict-card-outcome{font-family:'Archivo Black',sans-serif;font-size:.82rem;color:var(--epl);}
+  .predict-spinner{display:inline-block;width:16px;height:16px;border:2px solid var(--border);
+    border-top-color:var(--epl);border-radius:50%;animation:spin .6s linear infinite;vertical-align:middle;}
   .conf-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1rem;}
   .conf-card{background:var(--card);border:1px solid var(--border);border-radius:12px;
     padding:1.25rem;text-align:center;}
@@ -356,24 +387,12 @@
   </section>
   <section id="predict" class="section">
     <div class="card" style="margin-bottom:1rem">
-      <div class="card-title">Predict a Match</div>
-      <div class="predict-form">
-        <select id="pred-home"><option value="">— Home Team —</option></select>
-        <span class="vs-badge">VS</span>
-        <select id="pred-away"><option value="">— Away Team —</option></select>
-        <button class="btn-search" onclick="runPredict()">Predict</button>
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.75rem;margin-bottom:.75rem">
+        <div class="card-title" style="margin:0">Upcoming Fixtures</div>
+        <button class="btn-predict-all" id="btn-predict-all" onclick="predictAllGameweek()">Predict All Gameweek</button>
       </div>
-      <div id="predict-result"></div>
-    </div>
-    <div class="card">
-      <div class="card-title">About this prediction</div>
-      <p style="font-size:.88rem;line-height:1.7;color:#374151">
-        Uses the <strong>pre-match model (<span id="about-pre-acc">…</span> accuracy)</strong> trained on 11 seasons of EPL data (2014–2025).
-        Features include last-5 form, home/away specific form, current league position and points.
-      </p>
-      <p style="font-size:.78rem;line-height:1.5;color:var(--muted);margin-top:.5rem;font-style:italic">
-        Accuracy measured on held-out test data. Current season predictions use the live trained model.
-      </p>
+      <p style="font-size:.82rem;color:var(--muted);margin-bottom:1rem">Click a fixture to predict, or predict all at once. Uses the <strong>Sharp v3.0</strong> model (<span id="about-pre-acc">…</span> accuracy).</p>
+      <div id="predict-fixtures-list"><div class="loading">Loading fixtures…</div></div>
     </div>
   </section>
 
@@ -596,6 +615,7 @@ function showTab(name,btn){
   document.getElementById('hamburger').classList.remove('open');
   localStorage.setItem('activeTab', name);
   if(name==='performance') loadPerformance();
+  if(name==='predict') loadPredictTab();
   if(name==='teams') loadTeams();
   if(name==='fixtures' && !window._fixturesData) loadFixtures();
   if(name==='standings' && !window._standingsLoaded) loadStandings();
@@ -688,31 +708,133 @@ async function loadH2H(){
       </div>`).join('')}`;
 }
 
-async function runPredict(){
-  const home=document.getElementById('pred-home').value;
-  const away=document.getElementById('pred-away').value;
-  if(!home||!away) return alert('Please select both teams');
-  const d=await fetch(`/api/predict?home=${encodeURIComponent(home)}&away=${encodeURIComponent(away)}`).then(r=>r.json());
-  if(d.error) return alert(d.error);
-  const outcomes={H:'Home Win',D:'Draw',A:'Away Win'};
-  const p=d.probabilities;
-  document.getElementById('predict-result').innerHTML=`
-    <div class="predict-result show">
-      <div style="display:flex;align-items:center;justify-content:center;gap:1rem;margin-bottom:.5rem;flex-wrap:wrap">
-        <div style="display:flex;align-items:center;gap:.5rem">${crestImg(d.home,40)}<span style="font-weight:700">${d.home}</span></div>
-        <span style="opacity:.5;font-size:.9rem">vs</span>
-        <div style="display:flex;align-items:center;gap:.5rem"><span style="font-weight:700">${d.away}</span>${crestImg(d.away,40)}</div>
-      </div>
-      <div class="predict-outcome">${outcomes[d.prediction]}</div>
-      <div class="predict-label">#${d.home_position} · #${d.away_position}</div>
-      <div class="proba-bars">
-        ${Object.entries(p).map(([k,v])=>`
-          <div class="proba-item">
-            <div class="proba-circle ${k===d.prediction?'winner':''}">${v}%</div>
-            <div class="proba-item-label">${outcomes[k]}</div>
-          </div>`).join('')}
-      </div>
-    </div>`;
+// ── Predict tab (fixture cards) ──
+let _predictFixtures = null;
+let _predictLoaded = false;
+
+async function loadPredictTab(){
+  if(_predictLoaded) return;
+  try {
+    const data = await fetch('/api/fixtures').then(r=>r.json());
+    _predictFixtures = data;
+    _predictLoaded = true;
+    renderPredictCards(data);
+  } catch(e) {
+    document.getElementById('predict-fixtures-list').innerHTML =
+      '<div class="loading">Failed to load fixtures.</div>';
+  }
+}
+
+function renderPredictCards(fixtures){
+  if(!fixtures || !fixtures.length){
+    document.getElementById('predict-fixtures-list').innerHTML =
+      '<div class="loading">No upcoming fixtures found.</div>';
+    return;
+  }
+  const byMD = {};
+  fixtures.forEach(f => {
+    if(!byMD[f.matchday]) byMD[f.matchday] = [];
+    byMD[f.matchday].push(f);
+  });
+  const matchdays = Object.keys(byMD).map(Number).sort((a,b)=>a-b);
+  let html = '';
+  matchdays.forEach(md => {
+    html += `<div style="margin-bottom:1.25rem"><div style="font-family:'Archivo Black',sans-serif;font-size:.88rem;color:var(--epl);margin-bottom:.5rem">Matchday ${md}</div>`;
+    byMD[md].forEach(f => {
+      const fid = `pf-${f.date}-${f.home_team}-${f.away_team}`.replace(/[^a-zA-Z0-9-]/g,'_');
+      const [yr,mo,dy] = f.date.split('-');
+      const dateStr = `${dy}/${mo}/${yr.slice(2)}`;
+      const timeStr = f.utc_time ? ` · ${f.utc_time} UTC` : '';
+      const homeCrest = f.home_crest ? `<img src="${f.home_crest}" style="width:28px;height:28px;object-fit:contain">` : '';
+      const awayCrest = f.away_crest ? `<img src="${f.away_crest}" style="width:28px;height:28px;object-fit:contain">` : '';
+      html += `<div class="predict-card" id="${fid}" data-home="${f.home_team}" data-away="${f.away_team}" data-date="${f.date}">
+        <div class="predict-card-teams">
+          <div class="predict-card-team">${homeCrest}<span class="predict-card-team-name">${f.home_team}</span></div>
+          <div class="predict-card-vs">VS</div>
+          <div class="predict-card-team away"><span class="predict-card-team-name">${f.away_team}</span>${awayCrest}</div>
+        </div>
+        <div class="predict-card-meta">${dateStr}${timeStr}</div>
+        <div class="predict-card-actions" id="${fid}-actions">`;
+      if(f.prediction){
+        html += renderPredictResult(f.prediction, fid);
+      } else {
+        html += `<button class="btn-predict" onclick="predictFixture('${fid}','${f.home_team}','${f.away_team}','${f.date}')">Predict</button>`;
+      }
+      html += `</div></div>`;
+    });
+    html += '</div>';
+  });
+  document.getElementById('predict-fixtures-list').innerHTML = html;
+}
+
+function renderPredictResult(p, fid){
+  const outcomes = {H:'Home',D:'Draw',A:'Away'};
+  const conf = parseFloat(p.confidence);
+  const confClass = conf >= 55 ? 'high' : conf >= 40 ? 'mid' : 'low';
+  return `<div class="predict-card-result">
+    <span class="predict-card-outcome">${outcomes[p.predicted_outcome]||p.predicted_outcome}</span>
+    <span class="predict-card-probs"><span>H ${parseFloat(p.prob_home).toFixed(1)}%</span> · <span>D ${parseFloat(p.prob_draw).toFixed(1)}%</span> · <span>A ${parseFloat(p.prob_away).toFixed(1)}%</span></span>
+    <span class="predict-card-conf ${confClass}">${conf.toFixed(1)}%</span>
+    <button class="btn-predict-secondary" onclick="rePredict('${fid}')">Re-predict</button>
+  </div>`;
+}
+
+async function predictFixture(fid, home, away, date){
+  const el = document.getElementById(fid+'-actions');
+  el.innerHTML = '<span class="predict-spinner"></span>';
+  try {
+    const d = await fetch(`/api/predict?home=${encodeURIComponent(home)}&away=${encodeURIComponent(away)}`).then(r=>r.json());
+    if(d.error){ el.innerHTML = `<span style="color:var(--red);font-size:.82rem">${d.error}</span>`; return; }
+    const p = d.probabilities;
+    const pred = {predicted_outcome: d.prediction, prob_home: p.H, prob_draw: p.D, prob_away: p.A, confidence: Math.max(p.H,p.D,p.A)};
+    el.innerHTML = renderPredictResult(pred, fid);
+    // Log prediction
+    fetch('/api/log_prediction', {method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({match_date:date, home_team:home, away_team:away,
+        predicted_outcome:d.prediction, prob_home:p.H, prob_draw:p.D, prob_away:p.A,
+        confidence:Math.max(p.H,p.D,p.A)})
+    }).catch(()=>{});
+    // Update local cache
+    if(_predictFixtures){
+      const fx = _predictFixtures.find(f=>f.date===date&&f.home_team===home&&f.away_team===away);
+      if(fx) fx.prediction = pred;
+    }
+  } catch(e) {
+    el.innerHTML = '<span style="color:var(--red);font-size:.82rem">Prediction failed</span>';
+  }
+}
+
+function rePredict(fid){
+  const card = document.getElementById(fid);
+  if(!card) return;
+  const home = card.dataset.home, away = card.dataset.away, date = card.dataset.date;
+  // Clear cached prediction
+  if(_predictFixtures){
+    const fx = _predictFixtures.find(f=>f.date===date&&f.home_team===home&&f.away_team===away);
+    if(fx) fx.prediction = null;
+  }
+  predictFixture(fid, home, away, date);
+}
+
+async function predictAllGameweek(){
+  const btn = document.getElementById('btn-predict-all');
+  btn.disabled = true;
+  btn.textContent = 'Predicting…';
+  const cards = document.querySelectorAll('.predict-card');
+  const pending = [];
+  cards.forEach(card => {
+    const fid = card.id;
+    const actions = document.getElementById(fid+'-actions');
+    const hasResult = actions && actions.querySelector('.predict-card-result');
+    if(!hasResult){
+      pending.push({fid, home:card.dataset.home, away:card.dataset.away, date:card.dataset.date});
+    }
+  });
+  for(const p of pending){
+    await predictFixture(p.fid, p.home, p.away, p.date);
+  }
+  btn.disabled = false;
+  btn.textContent = 'Predict All Gameweek';
 }
 
 
@@ -920,11 +1042,11 @@ let teamCrests = {};
 async function populateTeamDropdowns(){
   const teams = await fetch('/api/current_teams').then(r=>r.json());
   teams.forEach(t=>{ teamCrests[t.name] = t.crest; });
-  const ids = ['h2h-home','h2h-away','pred-home','pred-away','ht-home','ht-away'];
+  const ids = ['h2h-home','h2h-away','ht-home','ht-away'];
   const opts = teams.map(t=>`<option value="${t.name}">${t.name}</option>`).join('');
   ids.forEach(id=>{
     const sel = document.getElementById(id);
-    sel.innerHTML = sel.options[0].outerHTML + opts;
+    if(sel) sel.innerHTML = sel.options[0].outerHTML + opts;
   });
 }
 
