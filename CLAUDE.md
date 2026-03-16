@@ -292,12 +292,13 @@ These features are computed at prediction time but NOT yet in the trained model'
 
 ## Next Session Priorities
 
-1. **A3:** GitHub Action — weekly auto-retrain, +0.32%/week compound gain
-2. **A4:** Value betting — `ODDS_API_KEY` ready, The Odds API already integrated
-3. **A3:** Dixon-Coles P(draw) hybrid feature — est. +10–15% draw recall
-4. **A3:** Custom draw threshold — 5 lines of code, test post-retrain
-5. **A3:** Try time-weighted training — weight recent seasons more heavily
-6. **A1:** Teams table mobile column fix
+1. **A1+A2:** Predict Tab Redesign — replace free-form dropdowns with real fixture cards, auto-log predictions. See `docs/PREDICT_TAB_REDESIGN.md`
+2. **A3:** GitHub Action — weekly auto-retrain, +0.32%/week compound gain
+3. **A4:** Value betting — `ODDS_API_KEY` ready, The Odds API already integrated
+4. **A3:** Dixon-Coles P(draw) hybrid feature — est. +10–15% draw recall
+5. **A3:** Custom draw threshold — 5 lines of code, test post-retrain
+6. **A3:** Try time-weighted training — weight recent seasons more heavily
+7. **A1:** Teams table mobile column fix
 
 ---
 

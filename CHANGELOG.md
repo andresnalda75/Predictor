@@ -4,6 +4,16 @@ All model and data changes are recorded here. Each deployed model gets a version
 
 ---
 
+## 2026-03-15 — Predict Tab Redesign Plan (A1+A2)
+
+- **Planned:** Replace free-form team dropdowns with real upcoming fixture cards from football-data.org
+- **Planned:** Each fixture gets a Predict button that runs the model and auto-logs to `predictions.db`
+- **Planned:** "Predict All Gameweek" button for batch predictions
+- **Planned:** `/api/predict` updated to accept fixture-sourced match data and auto-log
+- **Design doc:** `docs/PREDICT_TAB_REDESIGN.md`
+
+---
+
 ## 2026-03-15 — Prediction Logging System (A4)
 
 - **New:** `data/predictions.db` — SQLite database for storing every prediction with outcome tracking
