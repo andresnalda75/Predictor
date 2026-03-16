@@ -46,17 +46,22 @@ Replace the free-form team picker with **real upcoming EPL fixtures** from footb
 - Group fixtures by gameweek/date
 - Show already-predicted fixtures with their stored probabilities (check `predictions.db` via `/api/track_record`)
 - Handle loading states, errors, already-kicked-off matches (disable Predict button)
+- **Re-predict button:** shown on fixture cards that already have a prediction. Clicking it calls `/api/predict` — backend decides whether to return existing prediction (same model version) or run a fresh one (new model version). Frontend doesn't need to know which model is current — backend handles it.
 
 ### A2 — Backend (API changes)
 - Update `/api/predict` to accept a `fixture_id` or `match_date` + `home_team` + `away_team` from the schedule (instead of free-form team selection)
 - After running the model, automatically call the prediction logging logic (no separate `/api/log_prediction` call needed from frontend)
 - Return prediction result including `prediction_id` from the database
-- Add endpoint or param to check if a fixture has already been predicted (avoid duplicates)
+- **Duplicate check:** unique on `match_date + home_team + away_team + model_version` (NOT just match_date + teams). This means v3.0 Sharp logs once per match, but when v4.0 deploys it can log a fresh prediction for the same match alongside the v3.0 entry.
+- Before inserting, check if (match_date, home_team, away_team, current model_version) already exists. If yes, return the existing prediction — no new log entry. If no (e.g. new model version deployed), run the model and log a fresh entry tagged to the new version.
 
-### A4 — Prediction Logging (no changes needed)
-- `predictions.db` schema already handles all required fields
-- `/api/log_prediction` and `/api/track_record` work as-is
-- `reconcile_predictions.py` matches on (date, home_team, away_team) — compatible with fixture-sourced predictions
+### A4 — Prediction Logging (minor update)
+- `predictions.db` schema already handles all required fields including `model_version`
+- `/api/log_prediction` works as-is — multiple entries per match are allowed (one per model version)
+- `reconcile_predictions.py` needs a minor update: when reconciling, update ALL prediction rows for a given (date, home_team, away_team) — not just one. Multiple model versions may have predicted the same match.
+- `/api/track_record` display logic:
+  - **Default view:** show the most recent prediction per match (latest `model_version`)
+  - **Advanced view:** show full prediction history per match including all model versions, so users can compare how v3.0 vs v4.0 performed on the same fixture
 
 ### Old Team Picker
 - Can be retired entirely or moved to an "Advanced" / "Debug" section for ad-hoc what-if predictions
@@ -68,4 +73,6 @@ Replace the free-form team picker with **real upcoming EPL fixtures** from footb
 - Prediction logging schema in `predictions.db` already has all needed columns (match_date, home_team, away_team, model_version, etc.)
 - Team names must match between fixture API response and prediction logging — use the same normalisation as `live_data.py`
 - Gameweek grouping available from football-data.org API `matchday` field
-- Already-predicted fixtures should show stored results, not re-run the model
+- Already-predicted fixtures should show stored results, not re-run the model (unless a new model version is deployed)
+- **Uniqueness constraint:** `(match_date, home_team, away_team, model_version)` — enforced at the application level before INSERT. One prediction per match per model version. A UNIQUE index on these four columns is recommended.
+- **Reconciliation with multiple versions:** `reconcile_predictions.py` must update all rows matching (date, home_team, away_team) with the actual result, not just the first match. Each model version's prediction gets scored independently.

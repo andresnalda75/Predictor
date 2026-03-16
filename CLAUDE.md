@@ -87,11 +87,13 @@ SQLite-based system that logs every prediction the app makes so we can track liv
 - Requires `FOOTBALL_DATA_API_KEY` environment variable
 - Includes team name mapping (API names → short names used in predictions)
 
+**Duplicate logic:** unique on `match_date + home_team + away_team + model_version`. Same model version can only predict a match once. When a new model is deployed (e.g. v4.0), it can log a fresh prediction for the same match alongside the existing v3.0 entry.
+
 **Workflow:**
-1. User requests a prediction → app serves prediction + calls `/api/log_prediction` to store it
-2. After matchday, run `reconcile_predictions.py` to fill in actual results
-3. `/api/track_record` shows running accuracy, broken down by model version
-4. When a new model is deployed, update defaults in app.py — old predictions keep their original model tags
+1. User requests a prediction → app checks if (match_date, home_team, away_team, current model_version) exists. If yes, return existing prediction. If no, run model and log.
+2. After matchday, run `reconcile_predictions.py` to fill in actual results for ALL prediction rows matching that match (all model versions get scored).
+3. `/api/track_record` shows running accuracy — default view shows most recent prediction per match, advanced view shows all model versions.
+4. When a new model is deployed, update defaults in app.py — old predictions keep their original model tags.
 
 ---
 
