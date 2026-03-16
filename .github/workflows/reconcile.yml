@@ -1,0 +1,32 @@
+name: Reconcile Predictions
+
+on:
+  schedule:
+    - cron: '0 23 * * *'  # Daily at 23:00 UTC (after EPL matches finish)
+  workflow_dispatch:        # Allow manual trigger
+
+jobs:
+  reconcile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Reconcile predictions with actual results
+        env:
+          FOOTBALL_DATA_API_KEY: ${{ secrets.FOOTBALL_DATA_API_KEY }}
+        run: python scripts/reconcile_predictions.py
+
+      - name: Commit and push updated predictions.db
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/predictions.db
+          git diff --cached --quiet || git commit -m "chore: reconcile predictions with actual results"
+          git push
