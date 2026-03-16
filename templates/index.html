@@ -275,6 +275,7 @@
     <button class="tab-btn active" onclick="showTab('fixtures',this)">Fixtures</button>
     <button class="tab-btn" onclick="showTab('predict',this)">Predict</button>
     <button class="tab-btn" onclick="showTab('performance',this)">Performance</button>
+    <button class="tab-btn" onclick="showTab('track_record',this)">Track Record</button>
     <button class="tab-btn" onclick="showTab('teams',this)">Teams</button>
     <button class="tab-btn" onclick="showTab('halftime',this)">Live</button>
     <button class="tab-btn" onclick="showTab('h2h',this)">H2H</button>
@@ -299,6 +300,30 @@
   <section id="performance" class="section">
     <div id="perf-content"><div class="loading">Loading…</div></div>
   </section>
+  <section id="track_record" class="section">
+    <div class="card" style="margin-bottom:1rem">
+      <div style="display:flex;align-items:center;gap:.75rem;flex-wrap:wrap">
+        <span style="background:var(--epl);color:#fff;font-weight:700;padding:.35rem .9rem;border-radius:8px;font-size:.88rem">Sharp v3.0</span>
+        <span style="font-size:.85rem;color:var(--muted)">Deployed March 15, 2026</span>
+      </div>
+    </div>
+    <div class="card" style="margin-bottom:1rem">
+      <div id="track-summary"><div class="loading">Loading…</div></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Match-by-Match Predictions</div>
+      <div style="overflow-x:auto">
+        <table class="data-table" id="track-table" style="display:none">
+          <thead><tr><th>Date</th><th>Home</th><th>Away</th><th>Predicted</th><th>Actual</th><th>Result</th></tr></thead>
+          <tbody id="track-tbody"></tbody>
+        </table>
+      </div>
+      <div id="track-empty" style="display:none;text-align:center;padding:2.5rem 1rem">
+        <p style="font-size:1rem;color:var(--muted);line-height:1.7">Track record starts from March 15, 2026 — check back after this weekend's matches.</p>
+      </div>
+    </div>
+  </section>
+
   <section id="teams" class="section">
     <div class="card">
       <div class="card-title">Prediction Accuracy by Team</div>

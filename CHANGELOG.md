@@ -45,14 +45,14 @@ All model and data changes are recorded here. Each deployed model gets a version
 
 ---
 
-## v1.0 "Kickoff" — 2026-03-08
+## v1.0 "Kickoff" — Early March 2026
 
 ### Pre-Match Model (xgb_champion)
 - **Accuracy:** 55.6% on holdout
-- **Features:** 36 (form pts/GF/GA/GD/wins/draws, home/away form, league position, league points, GD, ELO, rolling shots/SOT, position diff, matchday)
-- **Algorithm:** XGBoost + Optuna hyperparameter tuning
+- **Features:** 36 (form pts/GF/GA/GD/wins/draws, home/away form, league position, league points, GD, ELO, Pi-ratings, rolling shots/SOT, position diff, matchday)
+- **Algorithm:** Base XGBoost + Optuna hyperparameter tuning
 - **Draw recall:** 0%
-- **Notes:** Baseline model. Platt scaling applied for confidence calibration. p-value 5×10⁻²⁶ vs random baseline.
+- **Notes:** Baseline model. Pi-ratings + ELO + form (exp. decay). Platt scaling applied for confidence calibration. p-value 5×10⁻²⁶ vs random baseline.
 
 ---
 

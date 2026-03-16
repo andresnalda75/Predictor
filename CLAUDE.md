@@ -7,22 +7,91 @@ Flask web app deployed on Railway that predicts EPL match outcomes using XGBoost
 **Stack:** Flask · XGBoost · Pandas · Gunicorn · Railway · football-data.org API
 
 **Key files:**
-- `app.py` — Flask backend, feature engineering, all API routes
+- `app.py` — Flask backend, feature engineering, all API routes, prediction logging
 - `templates/index.html` — full frontend (8 tabs, vanilla JS)
 - `live_data.py` — football-data.org integration (results, standings, fixtures)
 - `injury_data.py` — API-Football integration (pre-match injury counts)
 - `scripts/calculate_pi_ratings.py` — Pi-ratings calculation from hist_matches.csv
 - `scripts/add_odds_to_hist.py` — Download B365 odds from football-data.co.uk into hist_matches.csv
+- `scripts/reconcile_predictions.py` — match prediction outcomes against actual results
 - `notebooks/retrain_model.py` — Colab retraining pipeline (champion model)
 - `notebooks/retrain_halftime.py` — Colab retraining pipeline (halftime model)
 - `notebooks/experiment_catboost.py` — CatBoost vs XGBoost vs LightGBM comparison
 - `models/` — xgb_champion, xgb_halftime, cols_champion, cols_halftime, label_encoder
-- `data/` — hist_matches.csv, hist_features.csv, validation.json, pi_ratings.csv, pi_team_ratings.csv
+- `data/` — hist_matches.csv, hist_features.csv, validation.json, pi_ratings.csv, pi_team_ratings.csv, predictions.db
 
 **Environment variables:**
 - `FOOTBALL_DATA_API_KEY` — football-data.org API v4 key (match results, standings, fixtures)
 - `APIFOOTBALL_KEY` — API-Football key (injury data). Optional; app degrades gracefully without it. Free tier: 100 req/day. Sign up at api-sports.io
 - `ODDS_API_KEY` — The Odds API key (real bookmaker odds for live predictions). Optional; falls back to ELO-derived proxy without it. Free tier: 500 req/month. Sign up at the-odds-api.com
+
+---
+
+## Model Version History
+
+Every deployed model gets a version number, name, and accuracy record. Prediction logging tags every prediction with its model version so we can track live accuracy per model.
+
+| Version | Name | Accuracy | RPS | Features | Deploy Date | Key Changes |
+|---|---|---|---|---|---|---|
+| **v3.0** | **Sharp** | **59.11%** | **0.1895** | 26 | 2026-03-15 | Added 5 xG features (Understat). RFE pruned 36 → 26 features. 300 Optuna trials (best at trial 247). Draw recall 3.66%. **Current champion.** |
+| v2.0 | Odds On | 57.79% | — | 36 | 2026-03-14 | Added 11 B365 implied probability features (home edge, favourite, overround). First model with bookmaker odds. Pi-ratings integrated. |
+| v1.0 | Kickoff | 55.6% | — | 36 | early March 2026 | Base XGBoost + Optuna. Pi-ratings, ELO, form (exp. decay), shots, position diff. Draw recall 0%. |
+
+**Versioning rules for future models:**
+- Increment major version (v4.0, v5.0…) for each new champion deployment
+- Every model must record: version, name, accuracy, RPS, feature count, deploy date, key changes
+- Prediction logging tags every prediction with the model version that produced it (stored in `predictions.db`)
+- Retired models stay in this table for reference — never delete rows
+- When deploying a new model, update the defaults in `_init_predictions_db()` and `api_log_prediction()` in app.py
+
+---
+
+## Prediction Logging
+
+SQLite-based system that logs every prediction the app makes so we can track live accuracy over time. This is separate from the holdout validation — it measures real-world performance on future matches.
+
+**Database:** `data/predictions.db` (created automatically on app startup)
+
+**Schema (`predictions` table):**
+
+| Column | Type | Description |
+|---|---|---|
+| `id` | INTEGER PK | Auto-increment |
+| `match_date` | TEXT | Match date (YYYY-MM-DD) |
+| `home_team` | TEXT | Home team name |
+| `away_team` | TEXT | Away team name |
+| `predicted_outcome` | TEXT | H, D, or A |
+| `prob_home` | REAL | Model probability for home win |
+| `prob_draw` | REAL | Model probability for draw |
+| `prob_away` | REAL | Model probability for away win |
+| `confidence` | REAL | Max probability (confidence score) |
+| `actual_outcome` | TEXT | H, D, or A (NULL until reconciled) |
+| `correct` | INTEGER | 1 if correct, 0 if wrong (NULL until reconciled) |
+| `model_version` | TEXT | e.g. "v3.0" — links to Model Version History |
+| `model_name` | TEXT | e.g. "Sharp" |
+| `model_deployed` | TEXT | Deploy date of the model that made this prediction |
+| `created_at` | TEXT | ISO timestamp when prediction was logged |
+
+**Endpoints:**
+
+| Endpoint | Method | Description |
+|---|---|---|
+| `/api/log_prediction` | POST | Log a prediction. Required JSON: `match_date`, `home_team`, `away_team`, `predicted_outcome`, `prob_home`, `prob_draw`, `prob_away`, `confidence`. Optional: `model_version`, `model_name`, `model_deployed` (default to current champion). Returns `{id, status}`. |
+| `/api/track_record` | GET | Returns all logged predictions + summary stats: total, resolved, correct, accuracy %, and breakdown by `model_version`. |
+
+**Reconciliation:** `scripts/reconcile_predictions.py`
+- Finds predictions where `actual_outcome IS NULL` and `match_date < today`
+- Fetches finished EPL matches from football-data.org API
+- Matches by (date, home_team, away_team) and fills in `actual_outcome` + `correct`
+- Run manually or via cron: `python scripts/reconcile_predictions.py`
+- Requires `FOOTBALL_DATA_API_KEY` environment variable
+- Includes team name mapping (API names → short names used in predictions)
+
+**Workflow:**
+1. User requests a prediction → app serves prediction + calls `/api/log_prediction` to store it
+2. After matchday, run `reconcile_predictions.py` to fill in actual results
+3. `/api/track_record` shows running accuracy, broken down by model version
+4. When a new model is deployed, update defaults in app.py — old predictions keep their original model tags
 
 ---
 
@@ -193,9 +262,9 @@ Current draw recall is 0% — the model never predicts draws. This is the single
 - The Odds API integrated — 19–20 matches live, 476/500 requests remaining
 - `/api/performance` endpoint live
 - All hardcoded accuracy stats replaced with dynamic values
+- Prediction logging system: SQLite `predictions.db`, `/api/log_prediction`, `/api/track_record`, `scripts/reconcile_predictions.py`
 **Remaining:**
 - Value bet detection logic
-- Prediction logging (store every prediction with actual result)
 - Weekly accuracy report (rolling 10-match accuracy)
 - Calibration curve for confidence scores
 
