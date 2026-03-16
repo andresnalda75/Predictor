@@ -84,7 +84,11 @@ SQLite-based system that logs every prediction the app makes so we can track liv
 - Finds predictions where `actual_outcome IS NULL` and `match_date < today`
 - Fetches finished EPL matches from football-data.org API
 - Matches by (date, home_team, away_team) and fills in `actual_outcome` + `correct` for ALL rows (all model versions scored)
-- **Daily GitHub Action:** `.github/workflows/reconcile.yml` runs at 23:00 UTC daily (+ manual `workflow_dispatch`)
+- **GitHub Action:** `.github/workflows/reconcile.yml` (+ manual `workflow_dispatch`)
+  - Sat/Sun: 15:00, 18:00, 21:00 UTC (covers 12:30, 15:00, 17:30 kickoffs)
+  - Mon: 23:00 UTC (Monday night football)
+  - Tue/Wed: 22:00 UTC (midweek fixtures)
+  - `FOOTBALL_DATA_API_KEY` added to GitHub Actions secrets
 - Manual fallback: `python scripts/reconcile_predictions.py`
 - Requires `FOOTBALL_DATA_API_KEY` (env var locally, GitHub Actions secret in CI)
 - Includes team name mapping (API names → short names used in predictions)
@@ -267,8 +271,8 @@ Current draw recall is 0% — the model never predicts draws. This is the single
 - `/api/performance` endpoint live
 - All hardcoded accuracy stats replaced with dynamic values
 - Prediction logging system: SQLite `predictions.db`, `POST /api/log_prediction`, `GET /api/track_record`, `DELETE /api/track_record`, `scripts/reconcile_predictions.py`
-- Predictions tab built: fixture cards with 3 states (unpredicted/predicted-pending/predicted-resolved), Predict All Gameweek, auto-logging
-- Daily reconcile GitHub Action (`.github/workflows/reconcile.yml`, 23:00 UTC)
+- Predictions tab built: fixture cards grouped by matchday (GW 30/31/32/33, next 4 shown), 3 card states (unpredicted/awaiting result/resolved with ✅❌), per-matchday Predict All + individual Predict buttons, team names everywhere (no Home/Away labels), tab state persists on navigation, auto-logging
+- Reconcile GitHub Action (`.github/workflows/reconcile.yml`) — Sat/Sun 15:00/18:00/21:00, Mon 23:00, Tue/Wed 22:00 UTC
 - Model versioning documented: v1.0 Kickoff → v2.0 Odds On → v3.0 Sharp
 - Duplicate check: unique on `match_date + home_team + away_team + model_version`
 **Remaining:**

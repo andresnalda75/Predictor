@@ -13,14 +13,14 @@ The current Predict tab has two dropdowns where users manually pick any two team
 ## User Flow
 
 1. User opens **Predictions** tab
-2. Tab shows upcoming gameweek fixtures as cards (e.g. "GW 30 — Sat 22 Mar")
-3. Each fixture card shows: home team badge, away team badge, kickoff time, date
+2. Tab shows next 4 matchdays grouped by gameweek (e.g. "Matchday 30", "Matchday 31", etc.)
+3. Each fixture card shows: team names (not Home/Away labels), kickoff time, date
 4. User clicks **Predict** on a fixture card → model runs, prediction logged to `predictions.db` automatically
-5. Card transitions to **predicted/pending** state showing probabilities and confidence
-6. A **"Predict All Gameweek"** button at the top runs all unpredicted fixtures at once
-7. After matches are played, `reconcile_predictions.py` fills in actual results (daily GitHub Action)
-8. Card transitions to **predicted/resolved** state showing prediction vs actual result (correct/incorrect)
-9. Summary stats at the top: total predictions, accuracy %, streak
+5. Card transitions to **awaiting result** state showing probabilities and confidence
+6. Each matchday section has its own **"Predict All"** button + individual Predict buttons per fixture
+7. After matches are played, `reconcile_predictions.py` fills in actual results (GitHub Action on match days)
+8. Card transitions to **resolved** state showing prediction vs actual result (✅ or ❌)
+9. Tab state persists when navigating away and back
 
 ## Three Card States
 
@@ -43,7 +43,7 @@ Match is upcoming, no prediction logged for this fixture + current model version
 - Clicking it calls `/api/predict` with match_date + home_team + away_team
 - Backend runs model, logs to `predictions.db`, returns probabilities
 
-### 2. Predicted / Pending
+### 2. Awaiting Result
 
 Prediction exists but match hasn't been played yet (actual_outcome IS NULL).
 
@@ -63,7 +63,7 @@ Prediction exists but match hasn't been played yet (actual_outcome IS NULL).
 - Confidence badge + model version tag
 - **Re-predict** button: if current model version already predicted this match → does nothing (shows existing). If a newer model version is deployed → runs new model and logs fresh entry.
 
-### 3. Predicted / Resolved
+### 3. Resolved
 
 Match has been played, `reconcile_predictions.py` has filled in the actual result.
 
@@ -82,20 +82,30 @@ Match has been played, `reconcile_predictions.py` has filled in the actual resul
 - No Predict/Re-predict button — match is settled
 - Predicted outcome and actual outcome shown side by side
 
-## Reconciliation — Daily GitHub Action
+## Reconciliation — GitHub Action
 
-`scripts/reconcile_predictions.py` runs automatically via GitHub Actions on a daily schedule.
+`scripts/reconcile_predictions.py` runs automatically via GitHub Actions on match days.
 
-**Schedule:** Daily at 08:00 UTC (after overnight/late matches finish)
+**Schedule:** Timed to run after EPL kickoff windows:
+
+| Day | Times (UTC) | Reason |
+|---|---|---|
+| Sat/Sun | 15:00, 18:00, 21:00 | Covers 12:30, 15:00, 17:30 kickoffs |
+| Mon | 23:00 | Monday night football |
+| Tue/Wed | 22:00 | Midweek fixtures |
 
 **GitHub Action workflow:** `.github/workflows/reconcile.yml`
 ```yaml
 name: Reconcile Predictions
 on:
   schedule:
-    - cron: '0 8 * * *'    # Daily at 08:00 UTC
-  workflow_dispatch:         # Manual trigger
+    - cron: '0 15,18,21 * * 0,6'  # Sat/Sun
+    - cron: '0 23 * * 1'           # Mon
+    - cron: '0 22 * * 2,3'         # Tue/Wed
+  workflow_dispatch:                # Manual trigger
 ```
+
+**Secrets required:** `FOOTBALL_DATA_API_KEY` added to GitHub Actions repository secrets.
 
 **What it does:**
 1. Finds predictions where `actual_outcome IS NULL` and `match_date < today`

@@ -15,14 +15,18 @@ All model and data changes are recorded here. Each deployed model gets a version
 - **Duplicate check:** unique on `match_date + home_team + away_team + model_version` — same model predicts once per match, new model version can log fresh prediction alongside old ones
 
 ### Predictions Tab (replaces old Predict + Track Record tabs)
-- Fixture cards pulled from `/api/fixtures` replace free-form team dropdowns
-- 3 card states: **unpredicted** (Predict button) → **predicted/pending** (probabilities + confidence badge) → **predicted/resolved** (result + correct/incorrect indicator)
-- "Predict All Gameweek" button runs all unpredicted fixtures at once
+- Fixture cards grouped by matchday (GW 30/31/32/33 — next 4 matchdays shown)
+- 3 card states: **unpredicted** (Predict button) → **awaiting result** (probabilities + confidence badge) → **resolved** (result + ✅ or ❌)
+- Per-matchday "Predict All" button + individual Predict buttons per fixture
+- Team names shown everywhere — no more generic Home/Away labels
+- Tab state persists when navigating away and back
 - Auto-logs every prediction to `predictions.db` on click
 - Design doc: `docs/PREDICT_TAB_REDESIGN.md`
 
-### Daily Reconciliation GitHub Action
-- `.github/workflows/reconcile.yml` — runs at 23:00 UTC daily + manual `workflow_dispatch`
+### Reconciliation GitHub Action
+- `.github/workflows/reconcile.yml` + manual `workflow_dispatch`
+- Schedule: Sat/Sun 15:00, 18:00, 21:00 UTC · Mon 23:00 UTC · Tue/Wed 22:00 UTC
+- `FOOTBALL_DATA_API_KEY` added to GitHub Actions secrets
 - Fetches finished EPL matches, fills in `actual_outcome` + `correct` for all unresolved predictions (all model versions scored)
 
 ### Model Versioning
