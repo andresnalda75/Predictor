@@ -931,7 +931,19 @@ def api_log_prediction():
     return jsonify({"id": row_id, "status": "logged"}), 201
 
 
-@app.route("/api/track_record")
+@app.route("/api/track_record", methods=["DELETE"])
+def api_clear_track_record():
+    """Delete all rows from predictions table. For testing/reset during early phase."""
+    conn = sqlite3.connect(PREDICTIONS_DB)
+    deleted = conn.execute("SELECT COUNT(*) FROM predictions").fetchone()[0]
+    conn.execute("DELETE FROM predictions")
+    conn.commit()
+    conn.close()
+    log.info("All predictions cleared (%d rows deleted)", deleted)
+    return jsonify({"status": "cleared", "deleted": deleted})
+
+
+@app.route("/api/track_record", methods=["GET"])
 def api_track_record():
     """Return all logged predictions + summary statistics."""
     conn = sqlite3.connect(PREDICTIONS_DB)
