@@ -817,12 +817,16 @@ function rePredict(fid){
 }
 
 async function predictAllGameweek(){
+  if(!_predictFixtures||!_predictFixtures.length) return;
   const btn = document.getElementById('btn-predict-all');
   btn.disabled = true;
   btn.textContent = 'Predicting…';
+  const nextMD = Math.min(..._predictFixtures.map(f=>f.matchday));
   const cards = document.querySelectorAll('.predict-card');
   const pending = [];
   cards.forEach(card => {
+    const fx = _predictFixtures.find(f=>f.home_team===card.dataset.home&&f.away_team===card.dataset.away&&f.date===card.dataset.date);
+    if(!fx || fx.matchday !== nextMD) return;
     const fid = card.id;
     const actions = document.getElementById(fid+'-actions');
     const hasResult = actions && actions.querySelector('.predict-card-result');
