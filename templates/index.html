@@ -333,9 +333,12 @@
   </section>
   <section id="track_record" class="section">
     <div class="card" style="margin-bottom:1rem">
-      <div style="display:flex;align-items:center;gap:.75rem;flex-wrap:wrap">
-        <span style="background:var(--epl);color:#fff;font-weight:700;padding:.35rem .9rem;border-radius:8px;font-size:.88rem">Sharp v3.0</span>
-        <span style="font-size:.85rem;color:var(--muted)">Deployed March 15, 2026</span>
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.75rem">
+        <div style="display:flex;align-items:center;gap:.75rem;flex-wrap:wrap">
+          <span style="background:var(--epl);color:#fff;font-weight:700;padding:.35rem .9rem;border-radius:8px;font-size:.88rem">Sharp v3.0</span>
+          <span style="font-size:.85rem;color:var(--muted)">Deployed March 15, 2026</span>
+        </div>
+        <button onclick="clearAllPredictions()" style="background:transparent;color:var(--red);border:1px solid var(--red);padding:.35rem .9rem;border-radius:8px;font-family:'DM Sans',sans-serif;font-weight:600;font-size:.78rem;cursor:pointer">Clear All Predictions</button>
       </div>
     </div>
     <div class="card" style="margin-bottom:1rem">
@@ -389,7 +392,10 @@
     <div class="card" style="margin-bottom:1rem">
       <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.75rem;margin-bottom:.75rem">
         <div class="card-title" style="margin:0">Upcoming Fixtures</div>
-        <button class="btn-predict-all" id="btn-predict-all" onclick="predictAllGameweek()">Predict All Gameweek</button>
+        <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+          <button class="btn-predict-all" id="btn-predict-all" onclick="predictAllGameweek()" style="margin:0">Predict All Gameweek</button>
+          <button onclick="clearPredictions()" style="background:transparent;color:var(--red);border:1px solid var(--red);padding:.5rem 1.1rem;border-radius:10px;font-family:'DM Sans',sans-serif;font-weight:600;font-size:.82rem;cursor:pointer">Clear Predictions</button>
+        </div>
       </div>
       <p style="font-size:.82rem;color:var(--muted);margin-bottom:1rem">Click a fixture to predict, or predict all at once. Uses the <strong>Sharp v3.0</strong> model (<span id="about-pre-acc">…</span> accuracy).</p>
       <div id="predict-fixtures-list"><div class="loading">Loading fixtures…</div></div>
@@ -1222,6 +1228,29 @@ function renderFixtures(mode){
     html += '</div>';
   });
   container.innerHTML = html || '<div class="loading">No upcoming fixtures found.</div>';
+}
+
+// ── Clear predictions ──
+async function clearAllPredictions(){
+  if(!confirm('Are you sure? This will delete all logged predictions.')) return;
+  await fetch('/api/track_record',{method:'DELETE'});
+  _trackLoaded = false;
+  loadTrackRecord();
+  // Also reset predict tab cache
+  if(_predictFixtures) _predictFixtures.forEach(f=>f.prediction=null);
+  _predictLoaded = false;
+}
+
+async function clearPredictions(){
+  if(!confirm('Are you sure? This will delete all logged predictions.')) return;
+  await fetch('/api/track_record',{method:'DELETE'});
+  // Reset predict tab UI
+  if(_predictFixtures){
+    _predictFixtures.forEach(f=>f.prediction=null);
+    renderPredictCards(_predictFixtures);
+  }
+  // Reset track record tab
+  _trackLoaded = false;
 }
 
 // ── Track Record ──
