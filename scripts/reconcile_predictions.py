@@ -63,8 +63,8 @@ def fetch_finished_matches():
         ag = m["score"]["fullTime"]["away"]
         if hg is None:
             continue
-        home = TEAM_MAP.get(m["homeTeam"]["name"], m["homeTeam"]["name"])
-        away = TEAM_MAP.get(m["awayTeam"]["name"], m["awayTeam"]["name"])
+        home = TEAM_MAP.get(m["homeTeam"]["name"], m["homeTeam"]["name"]).strip().lower()
+        away = TEAM_MAP.get(m["awayTeam"]["name"], m["awayTeam"]["name"]).strip().lower()
         date = m["utcDate"][:10]
         result = "H" if hg > ag else ("A" if ag > hg else "D")
         results[(date, home, away)] = result
@@ -99,7 +99,7 @@ def reconcile():
 
     updated = 0
     for row_id, match_date, home, away in pending:
-        key = (match_date, home, away)
+        key = (match_date, home.strip().lower(), away.strip().lower())
         actual = finished.get(key)
         if actual is None:
             print(f"  ⏳ {match_date} {home} vs {away} — result not yet available")
