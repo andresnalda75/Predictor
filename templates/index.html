@@ -724,69 +724,38 @@ function renderScoreline(){
     `<span>${acc} live accuracy</span>`;
 }
 
-function getWeekKey(dateStr){
-  // Return Monday of the week containing dateStr (YYYY-MM-DD)
-  const d = new Date(dateStr + 'T12:00:00');
-  const day = d.getDay();
-  const diff = day === 0 ? -6 : 1 - day; // Monday = start of week
-  const mon = new Date(d);
-  mon.setDate(mon.getDate() + diff);
-  return mon.toISOString().slice(0,10);
-}
-
-function formatWeekRange(mondayStr){
-  const mon = new Date(mondayStr + 'T12:00:00');
-  const sun = new Date(mon);
-  sun.setDate(sun.getDate() + 6);
-  const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-  const m1 = months[mon.getMonth()], d1 = mon.getDate();
-  const m2 = months[sun.getMonth()], d2 = sun.getDate();
-  if(m1 === m2) return `Week of ${m1} ${d1}–${d2}`;
-  return `Week of ${m1} ${d1} – ${m2} ${d2}`;
-}
-
 function renderPredictFeed(){
   renderScoreline();
   const feed = document.getElementById('predict-feed');
   const fixtures = _predictFixtures || [];
 
-  // Filter to 4 weeks from today
-  const today = new Date();
-  today.setHours(0,0,0,0);
-  const cutoff = new Date(today);
-  cutoff.setDate(cutoff.getDate() + 28);
-  const todayStr = today.toISOString().slice(0,10);
-  const cutoffStr = cutoff.toISOString().slice(0,10);
-  const upcoming = fixtures.filter(f => f.date >= todayStr && f.date <= cutoffStr);
-
-  // Group by week
-  const byWeek = {};
-  upcoming.forEach(f => {
-    const wk = getWeekKey(f.date);
-    if(!byWeek[wk]) byWeek[wk] = [];
-    byWeek[wk].push(f);
+  // Group by matchday, take next 4 matchdays
+  const byMD = {};
+  fixtures.forEach(f => {
+    if(!byMD[f.matchday]) byMD[f.matchday] = [];
+    byMD[f.matchday].push(f);
   });
-  const weeks = Object.keys(byWeek).sort();
+  const matchdays = Object.keys(byMD).map(Number).sort((a,b)=>a-b).slice(0,4);
 
   // Past predictions (not in upcoming fixtures)
   const fixtureKeys = new Set(fixtures.map(f=>`${f.date}|${f.home_team}|${f.away_team}`));
   const past = (_predictPast||[]).filter(p=>!fixtureKeys.has(`${p.match_date}|${p.home_team}|${p.away_team}`));
 
-  if(!weeks.length && !past.length){
+  if(!matchdays.length && !past.length){
     feed.innerHTML = '<div class="loading">No predictions yet. Check back when fixtures are available.</div>';
     return;
   }
 
   let html = '';
 
-  weeks.forEach((wk, wi) => {
-    const weekId = `week-${wi}`;
-    html += `<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.5rem;margin:${wi>0?'1.25rem':'0'} 0 .5rem">
-      <div style="font-size:.76rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)">${formatWeekRange(wk)}</div>
-      <button class="btn-predict-all" id="${weekId}-btn" onclick="predictWeek('${weekId}')" style="margin:0;font-size:.72rem;padding:.3rem .8rem">Predict This Week</button>
+  matchdays.forEach((md, i) => {
+    const groupId = `md-${md}`;
+    html += `<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.5rem;margin:${i>0?'1.25rem':'0'} 0 .5rem">
+      <div style="font-size:.76rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)">Matchday ${md}</div>
+      <button class="btn-predict-all" id="${groupId}-btn" onclick="predictWeek('${groupId}')" style="margin:0;font-size:.72rem;padding:.3rem .8rem">Predict Matchday ${md}</button>
     </div>`;
-    byWeek[wk].forEach(f => {
-      html += renderFeedCard(f, weekId);
+    byMD[md].forEach(f => {
+      html += renderFeedCard(f, groupId);
     });
   });
 
@@ -900,10 +869,11 @@ function rePredict(fid){
   predictFixture(fid, home, away, date);
 }
 
-async function predictWeek(weekId){
-  const btn = document.getElementById(weekId+'-btn');
+async function predictWeek(groupId){
+  const btn = document.getElementById(groupId+'-btn');
+  const btnLabel = btn ? btn.textContent : '';
   if(btn){ btn.disabled = true; btn.textContent = 'Predicting…'; }
-  const cards = document.querySelectorAll(`.predict-card[data-week="${weekId}"]`);
+  const cards = document.querySelectorAll(`.predict-card[data-week="${groupId}"]`);
   const pending = [];
   cards.forEach(card => {
     const fid = card.id;
@@ -915,7 +885,7 @@ async function predictWeek(weekId){
   for(const p of pending){
     await predictFixture(p.fid, p.home, p.away, p.date);
   }
-  if(btn){ btn.disabled = false; btn.textContent = 'Predict This Week'; }
+  if(btn){ btn.disabled = false; btn.textContent = btnLabel; }
 }
 
 let _perfLoaded = false;
