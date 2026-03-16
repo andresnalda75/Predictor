@@ -786,7 +786,8 @@ def api_fixtures():
     conn.row_factory = sqlite3.Row
     existing = conn.execute(
         "SELECT match_date, home_team, away_team, predicted_outcome, "
-        "prob_home, prob_draw, prob_away, confidence, model_version "
+        "prob_home, prob_draw, prob_away, confidence, model_version, "
+        "actual_outcome, correct "
         "FROM predictions WHERE model_version='v3.0'"
     ).fetchall()
     conn.close()
